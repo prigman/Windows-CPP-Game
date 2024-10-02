@@ -3,40 +3,63 @@
 #define _USE_MATH_DEFINES
 #include <math.h>
 
+HWND HWnd;
+
 HPEN FirstColorPen, 
 SecondColorPen, 
 WhiteColorPen, 
-LetterPen;
+LetterPen,
+BackgroundPen;
 
-HBRUSH FirstColorBrush, SecondColorBrush;
+HBRUSH FirstColorBrush, 
+SecondColorBrush,
+BackgroundBrush;
+
+RECT RedrawPlatformRect, RedrawPrevPlatformRect;
+RECT RedrawLevelRect, RedrawPrevLevelRect;
 
 enum EBrickType
 {
     EBT_NONE,
-    EBT_FIRST, // letter "O"
-    EBT_SECOND
+    EBT_FIRST, // purple color
+    EBT_SECOND // cyan color
 };
 
 enum ELetterType
 {
     ELT_NONE,
-    ELT_FIRST, // purple color
-    ELT_SECOND // cyan color
+    ELT_FIRST, // letter "O"
 };
 
+/* SCALE OF THE GAME */
 const int GLOBAL_SCALE = 3;
 
+/* BRICK DATA */
 const int BRICK_WIDTH = 15;
 const int BRICK_HEIGHT = 7;
 const int BRICK_BORDER_ROUND = 2 * GLOBAL_SCALE;
 
+/* PLATFORM DATA */
+
 const int PLATFORM_BORDER_ROUND = 3 * GLOBAL_SCALE;
 const int PLATFORM_CIRCLE_SIZE = 7;
-int PlatformInnerWidth = 21;
+const int PLATFORM_DEFAULT_X_POSITION = 0;
+const int PLATFORM_DEFAULT_Y_POSITION = 185;
+const int PLATFORM_DEFAULT_INNER_WIDTH = 21;
+const int PLATFORM_DEFAULT_WIDTH = 28;
+const int PLATFORM_DEFAULT_HEIGHT = 7;
 
+int PlatformInnerWidth = PLATFORM_DEFAULT_INNER_WIDTH;
+int PlatformXPosition = PLATFORM_DEFAULT_X_POSITION;
+int PlatformXStep = GLOBAL_SCALE * 2;
+
+int PlatformWidth = PLATFORM_DEFAULT_WIDTH;
+
+/* CELL DATA */
 const int CELL_WIDTH = 16;
 const int CELL_HEIGHT = 8;
 
+/* LEVEL DATA */
 const int LEVEL_X_OFFSET = 8;
 const int LEVEL_Y_OFFSET = 6;
 
@@ -87,8 +110,17 @@ static void CreateRoundedRect(HDC hDC, int left, int top, int right, int bottom,
 
 static void CreateRect(HDC hDC, int left, int top, int right, int bottom, HPEN pen, HBRUSH brush)
 {
+    /*
+    * Example of drawing a rectangle:
+    * 
+    // CreateRect(hDC, 20, 50, 20 + BRICK_WIDTH, 50 + BRICK_HEIGHT);
+    * 
+    * left, right = x coord | top, bottom = y coord
+    * x, y can be modified by the width and height of the shape
+    */
+
     SelectObject(hDC, pen);
-    if (brush != 0)
+    if (brush != 0) // if not brush then draw only a border of the shape
         SelectObject(hDC, brush);
     Rectangle(hDC, left * GLOBAL_SCALE, top * GLOBAL_SCALE, right * GLOBAL_SCALE, bottom * GLOBAL_SCALE);
 }
@@ -109,6 +141,9 @@ static void CreateArc(HDC hDC, int x1, int y1, int x2, int y2, int x3, int y3, i
 
 static void CreatePlatform(HDC hDC, int posX, int posY)
 {
+    // draw a background before creating a platform
+    CreateCustomRect(hDC, RedrawPrevPlatformRect.left, RedrawPrevPlatformRect.top, RedrawPrevPlatformRect.right, RedrawPrevPlatformRect.bottom, BackgroundPen, BackgroundBrush);
+
     int platformXOffset = 4;
     int platformYOffset = 1;
 
@@ -161,7 +196,6 @@ static void CreateLevel(HDC hDC, char level[LEVEL_MAX_ROWS][LEVEL_MAX_BRICKS_IN_
     for (int i = 0; i < LEVEL_MAX_ROWS; i++)
         for (int j = 0; j < LEVEL_MAX_BRICKS_IN_ROW; j++)
             CreateBrick(hDC, LEVEL_X_OFFSET + j * CELL_WIDTH, LEVEL_Y_OFFSET + i * CELL_HEIGHT, (EBrickType)level[i][j]);
-    CreatePlatform(hDC, 50, 100);
 }
 
 static void CreatePenAndBrush(unsigned char red, unsigned char green, unsigned char blue, HPEN &pen, HBRUSH &brush)
@@ -174,6 +208,7 @@ static void SetPensAndBrushes()
 {
     WhiteColorPen = CreatePen(PS_SOLID, 0, RGB(255, 255, 255));
     LetterPen = CreatePen(PS_SOLID, GLOBAL_SCALE, RGB(255, 255, 255));
+    CreatePenAndBrush(BG_RGB_RED, BG_RGB_GREEN, BG_RGB_BLUE, BackgroundPen, BackgroundBrush); // backround color
     CreatePenAndBrush(255, 128, 255, FirstColorPen, FirstColorBrush); // purple color
     CreatePenAndBrush(128, 255, 255, SecondColorPen, SecondColorBrush); // cyan color
 }
@@ -203,40 +238,50 @@ static void CreateAnimatedBrick(HDC hDC, int posX, int posY, EBrickType brickTyp
 
     if (rotationStep > 4 && rotationStep <= 12)
     {
-        if (brickType == EBT_SECOND)
+        switch (brickType)
+        {
+        case EBT_SECOND:
         {
             frontColorPen = FirstColorPen;
             frontColorBrush = FirstColorBrush;
 
             backColorPen = SecondColorPen;
             backColorBrush = SecondColorBrush;
+            break;
         }
-        else
+        default:
         {
             frontColorPen = SecondColorPen;
             frontColorBrush = SecondColorBrush;
 
             backColorPen = FirstColorPen;
             backColorBrush = FirstColorBrush;
+            break;
+        }
         }
     }
     else
     {
-        if (brickType == EBT_FIRST)
+        switch (brickType)
+        {
+        case EBT_FIRST:
         {
             frontColorPen = FirstColorPen;
             frontColorBrush = FirstColorBrush;
 
             backColorPen = SecondColorPen;
             backColorBrush = SecondColorBrush;
+            break;
         }
-        else
+        default:
         {
             frontColorPen = SecondColorPen;
             frontColorBrush = SecondColorBrush;
 
             backColorPen = FirstColorPen;
             backColorBrush = FirstColorBrush;
+            break;
+        }
         }
     }
 
@@ -281,24 +326,65 @@ static void CreateAnimatedBrick(HDC hDC, int posX, int posY, EBrickType brickTyp
     }
 }
 
-void InitGame()
+static void RedrawWindowArea(int left, int top, int right, int bottom, RECT &redrawRect, RECT &prevRedrawRect, bool clearBackground = FALSE)
 {
-    SetPensAndBrushes();
+    prevRedrawRect = redrawRect;
+
+    redrawRect.left = (LEVEL_X_OFFSET + left) * GLOBAL_SCALE;
+    redrawRect.right = (right + redrawRect.left) * GLOBAL_SCALE;
+    redrawRect.top = top * GLOBAL_SCALE;
+    redrawRect.bottom = (bottom + redrawRect.top) * GLOBAL_SCALE;
+
+    InvalidateRect(HWnd, &prevRedrawRect, clearBackground); // set bg color on prev pos
+
+    InvalidateRect(HWnd, &redrawRect, clearBackground); // draw rect on new pos 
 }
 
-void DrawFrame(HDC hDC) // draw new information in window
+int OnKeyDown(EKeyType keyType)
 {
+    switch (keyType)
+    {
+    case EKT_LEFT:
+    {
+        PlatformXPosition -= PlatformXStep;
+        break;
+    }
+    case EKT_RIGHT:
+    {
+        PlatformXPosition += PlatformXStep;
+        break;
+    }
+    case EKT_SPACE:
+    {
+        break;
+    }
+    }
+    RedrawWindowArea(PlatformXPosition, PLATFORM_DEFAULT_Y_POSITION, PlatformWidth, PLATFORM_DEFAULT_HEIGHT, RedrawPlatformRect, RedrawPrevPlatformRect);
+    return 0;
+}
+
+void InitGame(HWND hWnd)
+{
+    HWnd = hWnd;
+    SetPensAndBrushes();
+    RedrawWindowArea(0, LEVEL_Y_OFFSET, CELL_WIDTH * LEVEL_MAX_ROWS, CELL_HEIGHT * LEVEL_MAX_BRICKS_IN_ROW, RedrawLevelRect, RedrawPrevLevelRect); // redraw level on start
+    
+    RedrawWindowArea(PlatformXPosition, PLATFORM_DEFAULT_Y_POSITION, PlatformWidth, PLATFORM_DEFAULT_HEIGHT, RedrawPlatformRect, RedrawPrevPlatformRect); // redraw platform start position
+}
+
+void DrawFrame(HDC hDC, RECT &paintArea) // draw new information in window
+{
+        
+    RECT intersectionRect{};
+
+    if (IntersectRect(&intersectionRect, &paintArea, &RedrawLevelRect))
+        CreateLevel(hDC, Level_01); // creating the prepared level with bricks and platform
+
+    if (IntersectRect(&intersectionRect, &paintArea, &RedrawPlatformRect)) // redraw only specified area
+        CreatePlatform(hDC, LEVEL_X_OFFSET + PlatformXPosition, PLATFORM_DEFAULT_Y_POSITION);
+
     /*
-    * Example of drawing a rectangle:
-    * 
-    // CreateRect(hDC, 20, 50, 20 + BRICK_WIDTH, 50 + BRICK_HEIGHT);
-    * 
-    * left, right = x coord | top, bottom = y coord
-    * x, y can be modified by the width and height of the shape
-    */
-
-    //CreateLevel(hDC, Level_01); // creating the prepared level with bricks and platform
-
+    * Brick animation
     SetGraphicsMode(hDC, GM_ADVANCED); // using for SetWorldTransform()
     
     for (int i = 0; i < 16; i++)
@@ -306,4 +392,5 @@ void DrawFrame(HDC hDC) // draw new information in window
         CreateAnimatedBrick(hDC, 20 + i * CELL_WIDTH, 100, EBT_SECOND, ELT_FIRST, i);
         CreateAnimatedBrick(hDC, 20 + i * CELL_WIDTH, 130, EBT_FIRST, ELT_FIRST, i);
     }
+    */
 }

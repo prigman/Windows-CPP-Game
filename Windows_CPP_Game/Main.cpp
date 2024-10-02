@@ -113,7 +113,7 @@ BOOL InitInstance(HINSTANCE hInstance, int nCmdShow)
    if (hWnd == 0)
       return FALSE;
 
-   InitGame();
+   InitGame(hWnd);
 
    ShowWindow(hWnd, nCmdShow);
    UpdateWindow(hWnd);
@@ -161,7 +161,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
             HDC hdc = BeginPaint(hWnd, &ps);
             
             // TODO: Add any drawing code that uses hdc here...
-            DrawFrame(hdc);
+            DrawFrame(hdc, ps.rcPaint);
 
             EndPaint(hWnd, &ps);
         }
@@ -169,6 +169,26 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
     case WM_DESTROY:
         PostQuitMessage(0);
         break;
+
+    case WM_KEYDOWN:
+    {
+        switch (wParam)
+        {
+        case VK_LEFT:
+        {
+            return OnKeyDown(EKT_LEFT);
+        }
+        case VK_RIGHT:
+        {
+            return OnKeyDown(EKT_RIGHT);
+        }
+        case VK_SPACE:
+        {
+            return OnKeyDown(EKT_SPACE);
+        }
+        }
+        break;
+    }
 
     default:
         return DefWindowProc(hWnd, message, wParam, lParam);
