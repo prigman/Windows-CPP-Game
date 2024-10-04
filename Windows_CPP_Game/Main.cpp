@@ -4,7 +4,7 @@
 #include "framework.h"
 #include "Main.h"
 
-constexpr auto MAX_LOADSTRING = 100;
+constexpr int MAX_LOADSTRING = 100;
 
 // Global Variables:
 HINSTANCE hInst;                                // current instance
@@ -159,8 +159,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
         {
             PAINTSTRUCT ps;
             HDC hdc = BeginPaint(hWnd, &ps);
-            
-            // TODO: Add any drawing code that uses hdc here...
+
             DrawFrame(hdc, ps.rcPaint);
 
             EndPaint(hWnd, &ps);
@@ -186,6 +185,15 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
         {
             return OnKeyDown(EKT_SPACE);
         }
+        }
+        break;
+    }
+
+    case WM_TIMER:
+    {
+        if (wParam == TIMER_ID)
+        {
+            return OnTimer();
         }
         break;
     }
