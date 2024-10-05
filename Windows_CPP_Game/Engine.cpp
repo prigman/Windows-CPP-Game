@@ -1,87 +1,8 @@
 #include "Engine.h"
 
-#define _USE_MATH_DEFINES
-#include <math.h>
-
-HWND HWnd;
-
-HPEN FirstColorPen, 
-SecondColorPen, 
-WhiteColorPen, 
-LetterPen,
-BackgroundPen;
-
-HBRUSH FirstColorBrush, 
-SecondColorBrush,
-WhiteColorBrush,
-BackgroundBrush;
-
-RECT RedrawPlatformRect, RedrawPrevPlatformRect;
-RECT RedrawLevelRect, RedrawPrevLevelRect;
-RECT RedrawBallRect, RedrawPrevBallRect;
-
-enum EBrickType
-{
-    EBT_NONE,
-    EBT_FIRST, // purple color
-    EBT_SECOND // cyan color
-};
-
-enum ELetterType
-{
-    ELT_NONE,
-    ELT_FIRST, // letter "O"
-};
-
-/* SCALE OF THE GAME */
-const int GLOBAL_SCALE = 3;
-
-/* BRICK DATA */
-const int BRICK_WIDTH = 15;
-const int BRICK_HEIGHT = 7;
-const int BRICK_BORDER_ROUND = 2;
-
-/* PLATFORM DATA */
-const int PLATFORM_BORDER_ROUND = 3;
-const int PLATFORM_CIRCLE_SIZE = 7;
-const int PLATFORM_DEFAULT_X_POSITION = 0;
-const int PLATFORM_DEFAULT_Y_POSITION = 185;
-const int PLATFORM_DEFAULT_INNER_WIDTH = 21;
-const int PLATFORM_DEFAULT_WIDTH = 28;
-const int PLATFORM_DEFAULT_HEIGHT = 7;
-
-int PlatformInnerWidth = PLATFORM_DEFAULT_INNER_WIDTH;
-int PlatformXPosition = PLATFORM_DEFAULT_X_POSITION;
-int PlatformXStep = GLOBAL_SCALE * 2;
-
-int PlatformWidth = PLATFORM_DEFAULT_WIDTH;
-
-/* BALL DATA */
-const int BALL_DEFAULT_X_POSITION = 20;
-const int BALL_DEFAULT_Y_POSITION = 170;
-const int BALL_SIZE = 4;
-
-int BallXPosition = BALL_DEFAULT_X_POSITION;
-int BallYPosition = BALL_DEFAULT_Y_POSITION;
-
-double BallSpeed = 3.0, BallDirection = M_PI - M_PI_4;
-
-/* CELL DATA */
-const int CELL_WIDTH = 16;
-const int CELL_HEIGHT = 8;
-
-/* LEVEL DATA */
-const int LEVEL_X_OFFSET = 8;
-const int LEVEL_Y_OFFSET = 6;
-
-const int LEVEL_MAX_ROWS = 14;
-const int LEVEL_MAX_BRICKS_IN_ROW = 12;
-const int LEVEL_MAX_X_POSITION = LEVEL_X_OFFSET + CELL_WIDTH * LEVEL_MAX_ROWS - BALL_SIZE;
-const int LEVEL_MAX_Y_POSITION = 199 - BALL_SIZE;
-
 /* FIRST LEVEL, BRICKS POSITION */
 
-char Level_01[LEVEL_MAX_ROWS][LEVEL_MAX_BRICKS_IN_ROW] =
+char Level_01[SGameEngine::LEVEL_MAX_ROWS][SGameEngine::LEVEL_MAX_BRICKS_IN_ROW] =
 {
     EBT_NONE, EBT_NONE, EBT_NONE, EBT_NONE, EBT_NONE, EBT_NONE, EBT_NONE, EBT_NONE, EBT_NONE, EBT_NONE, EBT_NONE, EBT_NONE,
     EBT_FIRST, EBT_FIRST, EBT_FIRST, EBT_FIRST, EBT_FIRST, EBT_FIRST, EBT_FIRST, EBT_FIRST, EBT_FIRST, EBT_FIRST, EBT_FIRST, EBT_FIRST,
@@ -99,7 +20,114 @@ char Level_01[LEVEL_MAX_ROWS][LEVEL_MAX_BRICKS_IN_ROW] =
     EBT_NONE, EBT_NONE, EBT_NONE, EBT_NONE, EBT_NONE, EBT_NONE, EBT_NONE, EBT_NONE, EBT_NONE, EBT_NONE, EBT_NONE, EBT_NONE,
 };
 
-static void CreateEllipse(HDC hDC, int left, int top, int right, int bottom, HPEN pen, HBRUSH brush, bool useGlobalScale)
+SGameEngine::SGameEngine()
+    : 
+
+    HWnd(nullptr),
+
+    FirstColorPen(nullptr),
+    SecondColorPen(nullptr),
+    WhiteColorPen(nullptr),
+    LetterPen(nullptr),
+    BackgroundPen(nullptr),
+
+    BackgroundBrush(nullptr),
+    FirstColorBrush(nullptr),
+    SecondColorBrush(nullptr),
+    WhiteColorBrush(nullptr),
+
+    RedrawPlatformRect{0, 0, 0, 0},
+    RedrawPrevPlatformRect{0, 0, 0, 0},
+    RedrawLevelRect{0, 0, 0, 0},
+    RedrawPrevLevelRect{0, 0, 0, 0},
+    RedrawBallRect{0, 0, 0, 0},
+    RedrawPrevBallRect{0, 0, 0, 0},
+
+
+    PlatformInnerWidth(PLATFORM_DEFAULT_INNER_WIDTH),
+    PlatformXPosition(PLATFORM_DEFAULT_X_POSITION),
+    PlatformXStep(GLOBAL_SCALE * 2),
+
+    PlatformWidth(PLATFORM_DEFAULT_WIDTH),
+
+    BallXPosition(BALL_DEFAULT_X_POSITION),
+    BallYPosition(BALL_DEFAULT_Y_POSITION),
+
+    BallSpeed(3.0), 
+    BallDirection(M_PI - M_PI_4)
+{}
+
+void SGameEngine::InitGame(HWND hWnd)
+{
+    HWnd = hWnd;
+
+    SetTimer(hWnd, TIMER_ID, 50, NULL);
+
+    SetPensAndBrushes();
+
+    RedrawLevel();    
+    RedrawPlatform();
+    RedrawBall();
+}
+
+// draw new information in window
+void SGameEngine::DrawFrame(HDC hDC, RECT &paintArea)
+{    
+    RECT intersectionRect{};
+
+    if (IntersectRect(&intersectionRect, &paintArea, &RedrawLevelRect))
+        CreateLevel(hDC, Level_01); // creating the prepared level with bricks and platform
+
+    if (IntersectRect(&intersectionRect, &paintArea, &RedrawPlatformRect)) // redraw only specified area
+        CreatePlatform(hDC, LEVEL_X_OFFSET + PlatformXPosition, PLATFORM_DEFAULT_Y_POSITION);
+
+    if (IntersectRect(&intersectionRect, &paintArea, &RedrawBallRect))
+        CreateBall(hDC);
+
+    /*
+    * Brick animation
+    */
+    //SetGraphicsMode(hDC, GM_ADVANCED); // using for SetWorldTransform()
+    //
+    //for (int i = 0; i < 16; i++)
+    //{
+    //    CreateAnimatedBrick(hDC, 20 + i * CELL_WIDTH, 100, EBT_SECOND, ELT_FIRST, i);
+    //    CreateAnimatedBrick(hDC, 20 + i * CELL_WIDTH, 130, EBT_FIRST, ELT_FIRST, i);
+    //}
+
+}
+
+int SGameEngine::OnTimer()
+{
+    MoveBall();
+
+    return 0;
+}
+
+int SGameEngine::OnKeyDown(EKeyType keyType)
+{
+    switch (keyType)
+    {
+    case EKT_LEFT:
+    {
+        PlatformXPosition -= PlatformXStep;
+        break;
+    }
+    case EKT_RIGHT:
+    {
+        PlatformXPosition += PlatformXStep;
+        break;
+    }
+    case EKT_SPACE:
+    {
+        break;
+    }
+    }
+    RedrawPlatform();
+    return 0;
+}
+
+void SGameEngine::CreateEllipse(HDC hDC, int left, int top, int right, int bottom, HPEN pen, HBRUSH brush, bool useGlobalScale)
 {
     if (useGlobalScale)
     {
@@ -114,7 +142,7 @@ static void CreateEllipse(HDC hDC, int left, int top, int right, int bottom, HPE
     Ellipse(hDC, left, top, right, bottom);
 }
 
-static void CreateRoundedRect(HDC hDC, int left, int top, int right, int bottom, HPEN pen, HBRUSH brush, int borderRound, bool useGlobalScale)
+void SGameEngine::CreateRoundedRect(HDC hDC, int left, int top, int right, int bottom, HPEN pen, HBRUSH brush, int borderRound, bool useGlobalScale)
 {
     if (useGlobalScale)
     {
@@ -129,7 +157,7 @@ static void CreateRoundedRect(HDC hDC, int left, int top, int right, int bottom,
     RoundRect(hDC, left, top, right, bottom, borderRound, borderRound);
 }
 
-static void CreateRect(HDC hDC, int left, int top, int right, int bottom, HPEN pen, HBRUSH brush, bool useGlobalScale)
+void SGameEngine::CreateRect(HDC hDC, int left, int top, int right, int bottom, HPEN pen, HBRUSH brush, bool useGlobalScale)
 {
     /*
     * Example of drawing a rectangle:
@@ -152,13 +180,13 @@ static void CreateRect(HDC hDC, int left, int top, int right, int bottom, HPEN p
     Rectangle(hDC, left, top, right, bottom);
 }
 
-static void CreateArc(HDC hDC, int x1, int y1, int x2, int y2, int x3, int y3, int x4, int y4, HPEN pen)
+void SGameEngine::CreateArc(HDC hDC, int x1, int y1, int x2, int y2, int x3, int y3, int x4, int y4, HPEN pen)
 {
     SelectObject(hDC, pen);
     Arc(hDC, x1 * GLOBAL_SCALE, y1 * GLOBAL_SCALE, x2 * GLOBAL_SCALE, y2 * GLOBAL_SCALE, x3 * GLOBAL_SCALE, y3 * GLOBAL_SCALE, x4 * GLOBAL_SCALE, y4 * GLOBAL_SCALE);
 }
 
-static void CreatePlatform(HDC hDC, int posX, int posY)
+void SGameEngine::CreatePlatform(HDC hDC, int posX, int posY)
 {
     // draw a background before creating a platform
     CreateRect(hDC, RedrawPrevPlatformRect.left, RedrawPrevPlatformRect.top, RedrawPrevPlatformRect.right, RedrawPrevPlatformRect.bottom, BackgroundPen, BackgroundBrush, false);
@@ -178,7 +206,7 @@ static void CreatePlatform(HDC hDC, int posX, int posY)
     CreateArc(hDC, posX + 1, posY + 1, posX + PLATFORM_CIRCLE_SIZE - 1, posY + PLATFORM_CIRCLE_SIZE - 1, posX + 1 + 1, posY + 1, posX + 1, posY + 1 + 2, WhiteColorPen);
 }
 
-static void CreateBall(HDC hDC)
+void SGameEngine::CreateBall(HDC hDC)
 {
     // draw a background before creating a platform
     CreateEllipse(hDC, RedrawPrevBallRect.left, RedrawPrevBallRect.top, RedrawPrevBallRect.right, RedrawPrevBallRect.bottom, BackgroundPen, BackgroundBrush, false);
@@ -186,7 +214,7 @@ static void CreateBall(HDC hDC)
     CreateEllipse(hDC, RedrawBallRect.left, RedrawBallRect.top, RedrawBallRect.right, RedrawBallRect.bottom, WhiteColorPen, WhiteColorBrush, false);
 }
 
-static void CreateBrick(HDC hDC, int posX, int posY, EBrickType brickColorType) // create brick based on its color type
+void SGameEngine::CreateBrick(HDC hDC, int posX, int posY, EBrickType brickColorType) // create brick based on its color type
 {
     HPEN pen;
     HBRUSH brush;
@@ -218,20 +246,20 @@ static void CreateBrick(HDC hDC, int posX, int posY, EBrickType brickColorType) 
     CreateRoundedRect(hDC, posX, posY, posX + BRICK_WIDTH, posY + BRICK_HEIGHT, pen, brush, BRICK_BORDER_ROUND, true);
 }
 
-static void CreateLevel(HDC hDC, char level[LEVEL_MAX_ROWS][LEVEL_MAX_BRICKS_IN_ROW]) // draw bricks in rows
+void SGameEngine::CreateLevel(HDC hDC, char level[SGameEngine::LEVEL_MAX_ROWS][SGameEngine::LEVEL_MAX_BRICKS_IN_ROW]) // draw bricks in rows
 {
     for (int i = 0; i < LEVEL_MAX_ROWS; i++)
         for (int j = 0; j < LEVEL_MAX_BRICKS_IN_ROW; j++)
             CreateBrick(hDC, LEVEL_X_OFFSET + j * CELL_WIDTH, LEVEL_Y_OFFSET + i * CELL_HEIGHT, (EBrickType)level[i][j]);
 }
 
-static void CreatePenAndBrush(unsigned char red, unsigned char green, unsigned char blue, HPEN &pen, HBRUSH &brush)
+void SGameEngine::CreatePenAndBrush(unsigned char red, unsigned char green, unsigned char blue, HPEN &pen, HBRUSH &brush)
 {
     pen = CreatePen(PS_SOLID, 0, RGB(red, green, blue));
     brush = CreateSolidBrush(RGB(red, green, blue));
 }
 
-static void SetPensAndBrushes()
+void SGameEngine::SetPensAndBrushes()
 {
     //WhiteColorPen = CreatePen(PS_SOLID, 0, RGB(255, 255, 255));
     CreatePenAndBrush(255, 255, 255, WhiteColorPen, WhiteColorBrush);
@@ -241,7 +269,7 @@ static void SetPensAndBrushes()
     CreatePenAndBrush(128, 255, 255, SecondColorPen, SecondColorBrush); // cyan color
 }
 
-static void CreateAnimatedBrick(HDC hDC, int posX, int posY, EBrickType brickType, ELetterType letterType, int rotationStep)
+void SGameEngine::CreateAnimatedBrick(HDC hDC, int posX, int posY, EBrickType brickType, ELetterType letterType, int rotationStep)
 {
     posX *= GLOBAL_SCALE;
 
@@ -354,7 +382,7 @@ static void CreateAnimatedBrick(HDC hDC, int posX, int posY, EBrickType brickTyp
     }
 }
 
-static void RedrawWindowArea(int left, int top, int right, int bottom, RECT &redrawRect, RECT &prevRedrawRect, bool isBall = false, bool clearBackground = FALSE)
+void SGameEngine::RedrawWindowArea(int left, int top, int right, int bottom, RECT &redrawRect, RECT &prevRedrawRect, bool isBall, bool clearBackground) const
 {
     prevRedrawRect = redrawRect;
 
@@ -380,22 +408,22 @@ static void RedrawWindowArea(int left, int top, int right, int bottom, RECT &red
     InvalidateRect(HWnd, &redrawRect, clearBackground);
 }
 
-static void RedrawPlatform()
+void SGameEngine::RedrawPlatform()
 {
     RedrawWindowArea(PlatformXPosition + LEVEL_X_OFFSET, PLATFORM_DEFAULT_Y_POSITION, PlatformWidth, PLATFORM_DEFAULT_HEIGHT, RedrawPlatformRect, RedrawPrevPlatformRect);
 }
 
-static void RedrawLevel()
+void SGameEngine::RedrawLevel()
 {
     RedrawWindowArea(LEVEL_X_OFFSET, LEVEL_Y_OFFSET, CELL_WIDTH * LEVEL_MAX_ROWS, CELL_HEIGHT * LEVEL_MAX_BRICKS_IN_ROW, RedrawLevelRect, RedrawPrevLevelRect);
 }
 
-static void RedrawBall()
+void SGameEngine::RedrawBall()
 {
     RedrawWindowArea(BallXPosition + LEVEL_X_OFFSET, BallYPosition + LEVEL_Y_OFFSET, BALL_SIZE * GLOBAL_SCALE - 1, BALL_SIZE * GLOBAL_SCALE - 1, RedrawBallRect, RedrawPrevBallRect, true);
 }
 
-static void MoveBall()
+void SGameEngine::MoveBall()
 {
     int nextBallXPosition, nextBallYPosition;
 
@@ -430,73 +458,4 @@ static void MoveBall()
     BallYPosition = nextBallYPosition;
 
     RedrawBall();
-}
-
-int OnKeyDown(EKeyType keyType)
-{
-    switch (keyType)
-    {
-    case EKT_LEFT:
-    {
-        PlatformXPosition -= PlatformXStep;
-        break;
-    }
-    case EKT_RIGHT:
-    {
-        PlatformXPosition += PlatformXStep;
-        break;
-    }
-    case EKT_SPACE:
-    {
-        break;
-    }
-    }
-    RedrawPlatform();
-    return 0;
-}
-
-int OnTimer()
-{
-    MoveBall();
-
-    return 0;
-}
-
-void InitGame(HWND hWnd)
-{
-    HWnd = hWnd;
-
-    SetTimer(hWnd, TIMER_ID, 50, NULL);
-
-    SetPensAndBrushes();
-
-    RedrawLevel();    
-    RedrawPlatform();
-    RedrawBall();
-}
-
-void DrawFrame(HDC hDC, RECT &paintArea) // draw new information in window
-{    
-    RECT intersectionRect{};
-
-    if (IntersectRect(&intersectionRect, &paintArea, &RedrawLevelRect))
-        CreateLevel(hDC, Level_01); // creating the prepared level with bricks and platform
-
-    if (IntersectRect(&intersectionRect, &paintArea, &RedrawPlatformRect)) // redraw only specified area
-        CreatePlatform(hDC, LEVEL_X_OFFSET + PlatformXPosition, PLATFORM_DEFAULT_Y_POSITION);
-    
-    if (IntersectRect(&intersectionRect, &paintArea, &RedrawBallRect))
-        CreateBall(hDC);
-
-    /*
-    * Brick animation
-    */
-    //SetGraphicsMode(hDC, GM_ADVANCED); // using for SetWorldTransform()
-    //
-    //for (int i = 0; i < 16; i++)
-    //{
-    //    CreateAnimatedBrick(hDC, 20 + i * CELL_WIDTH, 100, EBT_SECOND, ELT_FIRST, i);
-    //    CreateAnimatedBrick(hDC, 20 + i * CELL_WIDTH, 130, EBT_FIRST, ELT_FIRST, i);
-    //}
-    
 }

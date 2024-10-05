@@ -7,6 +7,9 @@
 constexpr int MAX_LOADSTRING = 100;
 
 // Global Variables:
+
+SGameEngine Engine;
+
 HINSTANCE hInst;                                // current instance
 WCHAR szTitle[MAX_LOADSTRING];                  // The title bar text
 WCHAR szWindowClass[MAX_LOADSTRING];            // the main window class name
@@ -113,7 +116,7 @@ BOOL InitInstance(HINSTANCE hInstance, int nCmdShow)
    if (hWnd == 0)
       return FALSE;
 
-   InitGame(hWnd);
+   Engine.InitGame(hWnd);
 
    ShowWindow(hWnd, nCmdShow);
    UpdateWindow(hWnd);
@@ -160,7 +163,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
             PAINTSTRUCT ps;
             HDC hdc = BeginPaint(hWnd, &ps);
 
-            DrawFrame(hdc, ps.rcPaint);
+            Engine.DrawFrame(hdc, ps.rcPaint);
 
             EndPaint(hWnd, &ps);
         }
@@ -175,15 +178,15 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
         {
         case VK_LEFT:
         {
-            return OnKeyDown(EKT_LEFT);
+            return Engine.OnKeyDown(EKT_LEFT);
         }
         case VK_RIGHT:
         {
-            return OnKeyDown(EKT_RIGHT);
+            return Engine.OnKeyDown(EKT_RIGHT);
         }
         case VK_SPACE:
         {
-            return OnKeyDown(EKT_SPACE);
+            return Engine.OnKeyDown(EKT_SPACE);
         }
         }
         break;
@@ -193,7 +196,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
     {
         if (wParam == TIMER_ID)
         {
-            return OnTimer();
+            return Engine.OnTimer();
         }
         break;
     }
