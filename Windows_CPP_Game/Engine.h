@@ -48,20 +48,27 @@ public:
 private:
 	HWND HWnd;
 
-	HPEN FirstColorPen, 
-		SecondColorPen, 
-		WhiteColorPen, 
+	HPEN FirstColorPen,
+		SecondColorPen,
+		WhiteColorPen,
 		LetterPen,
-		BackgroundPen;
+		BackgroundPen,
+		LevelBorderFirstPen,
+		LevelBorderSecondPen,
+		LevelBorderThirdPen;
 
 	HBRUSH FirstColorBrush, 
 		SecondColorBrush,
 		WhiteColorBrush,
-		BackgroundBrush;
+		BackgroundBrush,
+		LevelBorderFirstBrush,
+		LevelBorderSecondBrush,
+		LevelBorderThirdBrush;
 
 	RECT RedrawPlatformRect, RedrawPrevPlatformRect;
 	RECT RedrawLevelRect, RedrawPrevLevelRect;
 	RECT RedrawBallRect, RedrawPrevBallRect;
+	RECT RedrawBordersRect, RedrawPrevBordersRect;
 
 	/* SCALE OF THE GAME */
 	static const int GLOBAL_SCALE = 3;
@@ -71,14 +78,41 @@ private:
 	static const int BRICK_HEIGHT = 7;
 	static const int BRICK_BORDER_ROUND = 2;
 
+	/* CELL DATA */
+	static const int CELL_WIDTH = 16;
+	static const int CELL_HEIGHT = 8;
+
+	/* BALL DATA */
+	static const int BALL_DEFAULT_X_POSITION = 20;
+	static const int BALL_DEFAULT_Y_POSITION = 170;
+	static const int BALL_SIZE = 4;
+
+	/* LEVEL DATA */
+
+	static const int LEVEL_BORDER_TILE_WIDTH = 4;
+	static const int LEVEL_BORDER_TILE_HEIGHT = LEVEL_BORDER_TILE_WIDTH;
+
+	static const int LEVEL_BORDER_LEFT_MARGIN = 2;
+	static const int LEVEL_BORDER_RIGHT_MARGIN = 1;
+	static const int LEVEL_BORDER_TOP_MARGIN = 1;
+
+	static const int LEVEL_BORDER_X_OFFSET = 6;
+	static const int LEVEL_BORDER_Y_OFFSET = 4;
+
+	static const int LEVEL_X_OFFSET = 8;
+	static const int LEVEL_Y_OFFSET = 6;
+
+	static const int LEVEL_MAX_X_POSITION = LEVEL_X_OFFSET + CELL_WIDTH * LEVEL_MAX_BRICKS_IN_ROW;
+	static const int LEVEL_MAX_Y_POSITION = 199 - BALL_SIZE;
+
 	/* PLATFORM DATA */
 	static const int PLATFORM_BORDER_ROUND = 3;
 	static const int PLATFORM_CIRCLE_SIZE = 7;
-	static const int PLATFORM_DEFAULT_X_POSITION = 0;
+	static const int PLATFORM_DEFAULT_X_POSITION = LEVEL_BORDER_X_OFFSET;
 	static const int PLATFORM_DEFAULT_Y_POSITION = 185;
-	static const int PLATFORM_DEFAULT_INNER_WIDTH = 21;
-	static const int PLATFORM_DEFAULT_WIDTH = 28;
-	static const int PLATFORM_DEFAULT_HEIGHT = 7;
+	static const int PLATFORM_DEFAULT_INNER_WIDTH = PLATFORM_CIRCLE_SIZE * 3;
+	static const int PLATFORM_DEFAULT_WIDTH = PLATFORM_DEFAULT_INNER_WIDTH + PLATFORM_CIRCLE_SIZE;
+	static const int PLATFORM_DEFAULT_HEIGHT = PLATFORM_CIRCLE_SIZE;
 
 	int PlatformInnerWidth;
 	int PlatformXPosition;
@@ -86,26 +120,11 @@ private:
 
 	int PlatformWidth;
 
-	/* BALL DATA */
-	static const int BALL_DEFAULT_X_POSITION = 20;
-	static const int BALL_DEFAULT_Y_POSITION = 170;
-	static const int BALL_SIZE = 4;
-
 	int BallXPosition;
 	int BallYPosition;
 
 	double BallSpeed, BallDirection;
 
-	/* CELL DATA */
-	static const int CELL_WIDTH = 16;
-	static const int CELL_HEIGHT = 8;
-
-	/* LEVEL DATA */
-	static const int LEVEL_X_OFFSET = 8;
-	static const int LEVEL_Y_OFFSET = 6;
-
-	static const int LEVEL_MAX_X_POSITION = LEVEL_X_OFFSET + CELL_WIDTH * LEVEL_MAX_ROWS - BALL_SIZE;
-	static const int LEVEL_MAX_Y_POSITION = 199 - BALL_SIZE;
 
 	void CreateEllipse(HDC hDC, int left, int top, int right, int bottom, HPEN pen, HBRUSH brush, bool useGlobalScale);
 	void CreateRoundedRect(HDC hDC, int left, int top, int right, int bottom, HPEN pen, HBRUSH brush, int borderRound, bool useGlobalScale);
@@ -122,5 +141,9 @@ private:
 	void RedrawPlatform();
 	void RedrawLevel();
 	void RedrawBall();
+	void RedrawBorders();
 	void MoveBall();
+	void CreateLevelBorder(HDC hDC,int posX, int posY, bool is_horizontal_line);
+	void CreateBounds(HDC hDC);
+	void CheckLevelBrickHit(int& nextBallYPosition);
 };

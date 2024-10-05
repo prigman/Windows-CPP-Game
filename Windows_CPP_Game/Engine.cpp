@@ -30,11 +30,17 @@ SGameEngine::SGameEngine()
     WhiteColorPen(nullptr),
     LetterPen(nullptr),
     BackgroundPen(nullptr),
+    LevelBorderFirstPen(nullptr),
+    LevelBorderSecondPen(nullptr),
+    LevelBorderThirdPen(nullptr),
 
     BackgroundBrush(nullptr),
     FirstColorBrush(nullptr),
     SecondColorBrush(nullptr),
     WhiteColorBrush(nullptr),
+    LevelBorderFirstBrush(nullptr),
+    LevelBorderSecondBrush(nullptr),
+    LevelBorderThirdBrush(nullptr),
 
     RedrawPlatformRect{0, 0, 0, 0},
     RedrawPrevPlatformRect{0, 0, 0, 0},
@@ -42,6 +48,8 @@ SGameEngine::SGameEngine()
     RedrawPrevLevelRect{0, 0, 0, 0},
     RedrawBallRect{0, 0, 0, 0},
     RedrawPrevBallRect{0, 0, 0, 0},
+    RedrawBordersRect{0, 0, 0, 0},
+    RedrawPrevBordersRect{0, 0, 0, 0},
 
 
     PlatformInnerWidth(PLATFORM_DEFAULT_INNER_WIDTH),
@@ -68,6 +76,7 @@ void SGameEngine::InitGame(HWND hWnd)
     RedrawLevel();    
     RedrawPlatform();
     RedrawBall();
+    RedrawBorders();
 }
 
 // draw new information in window
@@ -79,10 +88,13 @@ void SGameEngine::DrawFrame(HDC hDC, RECT &paintArea)
         CreateLevel(hDC, Level_01); // creating the prepared level with bricks and platform
 
     if (IntersectRect(&intersectionRect, &paintArea, &RedrawPlatformRect)) // redraw only specified area
-        CreatePlatform(hDC, LEVEL_X_OFFSET + PlatformXPosition, PLATFORM_DEFAULT_Y_POSITION);
+        CreatePlatform(hDC, PlatformXPosition, PLATFORM_DEFAULT_Y_POSITION);
 
     if (IntersectRect(&intersectionRect, &paintArea, &RedrawBallRect))
         CreateBall(hDC);
+
+    if (IntersectRect(&intersectionRect, &paintArea, &RedrawBordersRect))
+        CreateBounds(hDC);
 
     /*
     * Brick animation
@@ -111,11 +123,17 @@ int SGameEngine::OnKeyDown(EKeyType keyType)
     case EKT_LEFT:
     {
         PlatformXPosition -= PlatformXStep;
+        if (PlatformXPosition < LEVEL_BORDER_X_OFFSET)
+            PlatformXPosition = LEVEL_BORDER_X_OFFSET;
+        RedrawPlatform();
         break;
     }
     case EKT_RIGHT:
     {
         PlatformXPosition += PlatformXStep;
+        if (PlatformXPosition > LEVEL_MAX_X_POSITION - PlatformWidth + 1)
+            PlatformXPosition = LEVEL_MAX_X_POSITION - PlatformWidth + 1;
+        RedrawPlatform();
         break;
     }
     case EKT_SPACE:
@@ -123,7 +141,6 @@ int SGameEngine::OnKeyDown(EKeyType keyType)
         break;
     }
     }
-    RedrawPlatform();
     return 0;
 }
 
@@ -194,13 +211,12 @@ void SGameEngine::CreatePlatform(HDC hDC, int posX, int posY)
     int platformXOffset = 4;
     int platformYOffset = 1;
 
-    int platformWidth = 20;
     int platformHeight = 5;
 
     CreateEllipse(hDC, posX, posY, posX + PLATFORM_CIRCLE_SIZE, posY + PLATFORM_CIRCLE_SIZE, FirstColorPen, FirstColorBrush, true);
     CreateEllipse(hDC, posX + PlatformInnerWidth, posY, posX + PLATFORM_CIRCLE_SIZE + PlatformInnerWidth, posY + PLATFORM_CIRCLE_SIZE, FirstColorPen, FirstColorBrush, true);
 
-    CreateRoundedRect(hDC, posX + platformXOffset, posY + platformYOffset, posX + platformXOffset + platformWidth, posY + platformYOffset + platformHeight, SecondColorPen, SecondColorBrush, PLATFORM_BORDER_ROUND, true);
+    CreateRoundedRect(hDC, posX + platformXOffset, posY + platformYOffset, posX + platformXOffset + PlatformInnerWidth - 1, posY + platformYOffset + platformHeight, SecondColorPen, SecondColorBrush, PLATFORM_BORDER_ROUND, true);
 
     // draw highlight on the ellipse
     CreateArc(hDC, posX + 1, posY + 1, posX + PLATFORM_CIRCLE_SIZE - 1, posY + PLATFORM_CIRCLE_SIZE - 1, posX + 1 + 1, posY + 1, posX + 1, posY + 1 + 2, WhiteColorPen);
@@ -261,7 +277,9 @@ void SGameEngine::CreatePenAndBrush(unsigned char red, unsigned char green, unsi
 
 void SGameEngine::SetPensAndBrushes()
 {
-    //WhiteColorPen = CreatePen(PS_SOLID, 0, RGB(255, 255, 255));
+    CreatePenAndBrush(128, 255, 255, LevelBorderFirstPen, LevelBorderFirstBrush);
+    CreatePenAndBrush(255, 255, 255, LevelBorderSecondPen, LevelBorderSecondBrush);
+    CreatePenAndBrush(0, 0, 0, LevelBorderThirdPen, LevelBorderThirdBrush);
     CreatePenAndBrush(255, 255, 255, WhiteColorPen, WhiteColorBrush);
     LetterPen = CreatePen(PS_SOLID, GLOBAL_SCALE, RGB(255, 255, 255));
     CreatePenAndBrush(BG_RGB_RED, BG_RGB_GREEN, BG_RGB_BLUE, BackgroundPen, BackgroundBrush); // backround color
@@ -410,41 +428,47 @@ void SGameEngine::RedrawWindowArea(int left, int top, int right, int bottom, REC
 
 void SGameEngine::RedrawPlatform()
 {
-    RedrawWindowArea(PlatformXPosition + LEVEL_X_OFFSET, PLATFORM_DEFAULT_Y_POSITION, PlatformWidth, PLATFORM_DEFAULT_HEIGHT, RedrawPlatformRect, RedrawPrevPlatformRect);
+    RedrawWindowArea(PlatformXPosition, PLATFORM_DEFAULT_Y_POSITION, PlatformWidth, PLATFORM_DEFAULT_HEIGHT, RedrawPlatformRect, RedrawPrevPlatformRect);
 }
 
 void SGameEngine::RedrawLevel()
 {
-    RedrawWindowArea(LEVEL_X_OFFSET, LEVEL_Y_OFFSET, CELL_WIDTH * LEVEL_MAX_ROWS, CELL_HEIGHT * LEVEL_MAX_BRICKS_IN_ROW, RedrawLevelRect, RedrawPrevLevelRect);
+    RedrawWindowArea(LEVEL_X_OFFSET, LEVEL_Y_OFFSET, CELL_WIDTH * LEVEL_MAX_BRICKS_IN_ROW, CELL_HEIGHT * LEVEL_MAX_ROWS, RedrawLevelRect, RedrawPrevLevelRect);
 }
 
 void SGameEngine::RedrawBall()
 {
-    RedrawWindowArea(BallXPosition + LEVEL_X_OFFSET, BallYPosition + LEVEL_Y_OFFSET, BALL_SIZE * GLOBAL_SCALE - 1, BALL_SIZE * GLOBAL_SCALE - 1, RedrawBallRect, RedrawPrevBallRect, true);
+    RedrawWindowArea(BallXPosition, BallYPosition, BALL_SIZE * GLOBAL_SCALE - 1, BALL_SIZE * GLOBAL_SCALE - 1, RedrawBallRect, RedrawPrevBallRect, true);
+}
+
+void SGameEngine::RedrawBorders()
+{
+    RedrawWindowArea(LEVEL_BORDER_X_OFFSET, LEVEL_BORDER_Y_OFFSET, LEVEL_BORDER_TILE_WIDTH, LEVEL_BORDER_TILE_HEIGHT, RedrawBordersRect, RedrawPrevBordersRect);
 }
 
 void SGameEngine::MoveBall()
 {
-    int nextBallXPosition, nextBallYPosition;
+    int nextBallXPosition, nextBallYPosition, 
+        maxXPosition = LEVEL_MAX_X_POSITION - BALL_SIZE, platformYPosition = PLATFORM_DEFAULT_Y_POSITION - BALL_SIZE;
 
     nextBallXPosition = BallXPosition + (int)(BallSpeed * cos(BallDirection));
     nextBallYPosition = BallYPosition - (int)(BallSpeed * sin(BallDirection));
 
-    if (nextBallXPosition < 0)
+    if (nextBallXPosition < LEVEL_BORDER_X_OFFSET)
     {
-        nextBallXPosition = -nextBallXPosition;
+        nextBallXPosition = LEVEL_BORDER_X_OFFSET - (nextBallXPosition - LEVEL_BORDER_X_OFFSET);
         BallDirection = M_PI - BallDirection;
     }
 
-    if (nextBallYPosition < LEVEL_Y_OFFSET)
+    if (nextBallYPosition < LEVEL_BORDER_Y_OFFSET)
     {
-        nextBallYPosition = LEVEL_Y_OFFSET - (nextBallYPosition - LEVEL_Y_OFFSET);
+        nextBallYPosition = LEVEL_BORDER_Y_OFFSET - (nextBallYPosition - LEVEL_BORDER_Y_OFFSET);
         BallDirection = -BallDirection;
     }
 
-    if (nextBallXPosition > LEVEL_MAX_X_POSITION)
+    if (nextBallXPosition > maxXPosition)
     {
-        nextBallXPosition = LEVEL_MAX_X_POSITION - (nextBallXPosition - LEVEL_MAX_X_POSITION);
+        nextBallXPosition = maxXPosition - (nextBallXPosition - maxXPosition);
         BallDirection = M_PI - BallDirection;
     }
 
@@ -453,9 +477,77 @@ void SGameEngine::MoveBall()
         nextBallYPosition = LEVEL_MAX_Y_POSITION - (nextBallYPosition - LEVEL_MAX_Y_POSITION);
         BallDirection = M_PI + (M_PI - BallDirection);
     }
+
+    if (nextBallYPosition > platformYPosition)
+    {
+        if (nextBallXPosition >= PlatformXPosition && nextBallXPosition <= PlatformXPosition + PlatformWidth)
+        {
+            nextBallYPosition = platformYPosition - (nextBallYPosition - platformYPosition);
+            BallDirection = M_PI + (M_PI - BallDirection);
+        }
+    }
+
+    CheckLevelBrickHit(nextBallYPosition);
         
     BallXPosition = nextBallXPosition;
     BallYPosition = nextBallYPosition;
 
     RedrawBall();
+}
+
+void SGameEngine::CreateLevelBorder(HDC hDC, int posX, int posY, bool is_horizontal_line)
+{
+    if (is_horizontal_line)
+    {
+        CreateRect(hDC, posX, posY, posX + LEVEL_BORDER_TILE_WIDTH, posY + LEVEL_BORDER_TILE_HEIGHT, LevelBorderFirstPen, LevelBorderFirstBrush, true);
+        CreateRect(hDC, posX, posY, posX + LEVEL_BORDER_TILE_WIDTH, posY + 1, LevelBorderSecondPen, LevelBorderSecondBrush, true);
+        CreateRect(hDC, posX + LEVEL_BORDER_TILE_WIDTH / 2, posY + LEVEL_BORDER_TILE_HEIGHT / 2, posX + LEVEL_BORDER_TILE_WIDTH / 2 + 1, posY + LEVEL_BORDER_TILE_HEIGHT / 2 + 1, LevelBorderThirdPen, LevelBorderThirdBrush, true);
+    }
+    else
+    {
+        CreateRect(hDC, posX, posY, posX + LEVEL_BORDER_TILE_WIDTH, posY + LEVEL_BORDER_TILE_HEIGHT, LevelBorderFirstPen, LevelBorderFirstBrush, true);
+        CreateRect(hDC, posX, posY, posX + 1, posY + LEVEL_BORDER_TILE_HEIGHT, LevelBorderSecondPen, LevelBorderSecondBrush, true);
+        CreateRect(hDC, posX + LEVEL_BORDER_TILE_WIDTH / 2, posY + LEVEL_BORDER_TILE_HEIGHT / 2, posX + LEVEL_BORDER_TILE_WIDTH / 2 + 1, posY + LEVEL_BORDER_TILE_HEIGHT / 2 - 1, LevelBorderThirdPen, LevelBorderThirdBrush, true);
+    }
+}
+
+void SGameEngine::CreateBounds(HDC hDC)
+{
+    // right border
+    for (int i = 0; i < (LEVEL_MAX_Y_POSITION * GLOBAL_SCALE) / (LEVEL_BORDER_TILE_HEIGHT * GLOBAL_SCALE) + LEVEL_BORDER_TOP_MARGIN + 2; i++)
+        CreateLevelBorder(hDC, LEVEL_MAX_X_POSITION + LEVEL_BORDER_RIGHT_MARGIN, i * LEVEL_BORDER_TILE_HEIGHT + LEVEL_BORDER_TOP_MARGIN, false);
+
+    // left border
+    for (int i = 0; i < (LEVEL_MAX_Y_POSITION * GLOBAL_SCALE) / (LEVEL_BORDER_TILE_HEIGHT * GLOBAL_SCALE) + LEVEL_BORDER_TOP_MARGIN + 2; i++)
+        CreateLevelBorder(hDC, LEVEL_BORDER_LEFT_MARGIN, i * LEVEL_BORDER_TILE_HEIGHT + LEVEL_BORDER_TOP_MARGIN, false);
+
+    // top border
+    for (int i = 0; i < ((LEVEL_MAX_X_POSITION - LEVEL_BORDER_TILE_WIDTH) * GLOBAL_SCALE) / (LEVEL_BORDER_TILE_WIDTH * GLOBAL_SCALE) + LEVEL_BORDER_LEFT_MARGIN - 1; i++)
+        CreateLevelBorder(hDC, i * LEVEL_BORDER_TILE_WIDTH + LEVEL_BORDER_LEFT_MARGIN + 1, 0, true);
+
+    // bottom border
+   /* for (int i = 0; i < (LEVEL_MAX_X_POSITION * GLOBAL_SCALE) / (LEVEL_BORDER_TILE_WIDTH * GLOBAL_SCALE) + LEVEL_BORDER_LEFT_MARGIN - 1; i++)
+        CreateLevelBorder(hDC, i * LEVEL_BORDER_TILE_WIDTH + LEVEL_BORDER_LEFT_MARGIN + 1, LEVEL_MAX_Y_POSITION, true);*/
+
+}
+
+void SGameEngine::CheckLevelBrickHit(int& nextBallYPosition)
+{
+    int brickYPosition = LEVEL_Y_OFFSET + LEVEL_MAX_ROWS * CELL_HEIGHT;
+
+    for (int i = LEVEL_MAX_ROWS - 1; i >= 0; i--)
+    {
+        for (int j = 0; j < LEVEL_MAX_BRICKS_IN_ROW; j++)
+        {
+            if (Level_01[i][j] == 0)
+                continue;
+
+            else if (nextBallYPosition < brickYPosition)
+            {
+                nextBallYPosition = brickYPosition - (nextBallYPosition - brickYPosition);
+                BallDirection = -BallDirection;
+            }
+        }
+        brickYPosition -= CELL_HEIGHT;
+    }
 }
