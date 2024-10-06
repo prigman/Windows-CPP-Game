@@ -5,11 +5,13 @@
 #define _USE_MATH_DEFINES
 #include <math.h>
 
-constexpr char BG_RGB_RED = 50;
-constexpr char BG_RGB_GREEN = 64;
-constexpr char BG_RGB_BLUE = 117;
+#define BG_RGB_RED		50
+#define BG_RGB_GREEN	64
+#define BG_RGB_BLUE		117
 
 #define BACKGROUND_COLOR    RGB(BG_RGB_RED, BG_RGB_GREEN, BG_RGB_BLUE)
+
+const int TIMER_ID = WM_USER + 1;
 
 enum EKeyType
 {
@@ -31,22 +33,167 @@ enum ELetterType
 	ELT_FIRST, // letter "O"
 };
 
-const int TIMER_ID = WM_USER + 1;
-
 class SGameEngine
 {
 public:
-	SGameEngine();
+	static const int GLOBAL_SCALE = 3;
 
+	HWND HWnd;
+
+	SGameEngine() : HWnd(nullptr) {}
+
+	void InitGame(HWND hWnd);
+	int OnTimer();
+	int OnKeyDown(EKeyType keyType);
+};
+
+class Vector2
+{
+public:
+	int x;
+	int y;
+	Vector2(): x(0), y(0) {}
+	Vector2(int posX, int posY) : x(posX), y(posY) {}
+};
+
+class GameObject
+{
+public:
+	RECT redrawRect, redrawPrevRect;
+	Vector2 position;
+	int width;
+	int height;
+	GameObject(): position(0,0), width(0), height(0), redrawRect{0, 0, 0, 0}, redrawPrevRect{0, 0, 0, 0} {}
+	GameObject(Vector2 position, int width, int height) : position(position), width(width), height(height), redrawRect{0, 0, 0, 0}, redrawPrevRect{0, 0, 0, 0} {}
+	
+};
+
+class DynamicObject : public GameObject {
+public:
+	double speed;
+	double direction;
+	DynamicObject(): GameObject(), speed(0.0), direction(0.0) {}
+	DynamicObject(Vector2 position, int width, int height, double speed, double direction) : GameObject(position, width, height), speed(speed), direction(direction) {}
+};
+
+class StaticObject : public GameObject {
+public:
+	StaticObject(): GameObject(){}
+	StaticObject(Vector2 position, int width, int height) : GameObject(position, width, height) {}
+};
+
+class Border : public StaticObject
+{
+public:
+	static const int BORDER_TILE_WIDTH = 4;
+	static const int BORDER_TILE_HEIGHT = BORDER_TILE_WIDTH;
+
+	static const int BORDER_LEFT_MARGIN = 2;
+	static const int BORDER_RIGHT_MARGIN = 1;
+	static const int BORDER_TOP_MARGIN = 1;
+
+	static const int BORDER_X_OFFSET = 6;
+	static const int BORDER_Y_OFFSET = 4;
+
+	Border() : StaticObject(Vector2(), BORDER_TILE_WIDTH, BORDER_TILE_HEIGHT){}
+
+};
+
+class Ball : public DynamicObject
+{
+private:
+	static const int BALL_DEFAULT_X_POSITION = 20;
+	static const int BALL_DEFAULT_Y_POSITION = 170;
+public:
+	
+	static const int BALL_SIZE = 4;
+
+	//double BallDefaultSpeed; // 3.0
+	//double BallDefaultDirection; // M_PI - M_PI_4
+
+	Ball() : DynamicObject(Vector2(BALL_DEFAULT_X_POSITION, BALL_DEFAULT_Y_POSITION), BALL_SIZE, BALL_SIZE, 3.0, M_PI - M_PI_4) {}
+
+	void MoveBall(Ball &ball);
+};
+
+class Brick : public StaticObject
+{
+public:
+	static const int BRICK_WIDTH = 15;
+	static const int BRICK_HEIGHT = 7;
+	static const int BRICK_BORDER_ROUND = 2;
+
+	Brick() : StaticObject(Vector2(), BRICK_WIDTH, BRICK_HEIGHT){}
+
+};
+
+class Level : public StaticObject 
+{
+public:
 	static const int LEVEL_MAX_ROWS = 14;
 	static const int LEVEL_MAX_BRICKS_IN_ROW = 12;
 
-	void InitGame(HWND hWnd);
-	void DrawFrame(HDC hdc, RECT& paintArea);
-	int OnTimer();
-	int OnKeyDown(EKeyType keyType);
-private:
-	HWND HWnd;
+	static const int CELL_WIDTH = 16;
+	static const int CELL_HEIGHT = 8;
+
+	static const int LEVEL_X_OFFSET = 8;
+	static const int LEVEL_Y_OFFSET = 6;
+
+	static const int LEVEL_MAX_X_POSITION = LEVEL_X_OFFSET + CELL_WIDTH * LEVEL_MAX_BRICKS_IN_ROW;
+	static const int LEVEL_MAX_Y_POSITION = 199 - Ball::BALL_SIZE;
+
+	char Level_01[LEVEL_MAX_ROWS][LEVEL_MAX_BRICKS_IN_ROW] =
+	{
+		EBT_NONE, EBT_NONE, EBT_NONE, EBT_NONE, EBT_NONE, EBT_NONE, EBT_NONE, EBT_NONE, EBT_NONE, EBT_NONE, EBT_NONE, EBT_NONE,
+		EBT_FIRST, EBT_FIRST, EBT_FIRST, EBT_FIRST, EBT_FIRST, EBT_FIRST, EBT_FIRST, EBT_FIRST, EBT_FIRST, EBT_FIRST, EBT_FIRST, EBT_FIRST,
+		EBT_FIRST, EBT_FIRST, EBT_FIRST, EBT_FIRST, EBT_FIRST, EBT_FIRST, EBT_FIRST, EBT_FIRST, EBT_FIRST, EBT_FIRST, EBT_FIRST, EBT_FIRST,
+		EBT_SECOND, EBT_SECOND, EBT_SECOND, EBT_SECOND, EBT_SECOND, EBT_SECOND, EBT_SECOND, EBT_SECOND, EBT_SECOND, EBT_SECOND, EBT_SECOND, EBT_SECOND,
+		EBT_SECOND, EBT_SECOND, EBT_SECOND, EBT_SECOND, EBT_SECOND, EBT_SECOND, EBT_SECOND, EBT_SECOND, EBT_SECOND, EBT_SECOND, EBT_SECOND, EBT_SECOND,
+		EBT_FIRST, EBT_FIRST, EBT_FIRST, EBT_FIRST, EBT_FIRST, EBT_FIRST, EBT_FIRST, EBT_FIRST, EBT_FIRST, EBT_FIRST, EBT_FIRST, EBT_FIRST,
+		EBT_FIRST, EBT_FIRST, EBT_FIRST, EBT_FIRST, EBT_FIRST, EBT_FIRST, EBT_FIRST, EBT_FIRST, EBT_FIRST, EBT_FIRST, EBT_FIRST, EBT_FIRST,
+		EBT_SECOND, EBT_SECOND, EBT_SECOND, EBT_SECOND, EBT_SECOND, EBT_SECOND, EBT_SECOND, EBT_SECOND, EBT_SECOND, EBT_SECOND, EBT_SECOND, EBT_SECOND,
+		EBT_SECOND, EBT_SECOND, EBT_SECOND, EBT_SECOND, EBT_SECOND, EBT_SECOND, EBT_SECOND, EBT_SECOND, EBT_SECOND, EBT_SECOND, EBT_SECOND, EBT_SECOND,
+		EBT_NONE, EBT_NONE, EBT_NONE, EBT_NONE, EBT_NONE, EBT_NONE, EBT_NONE, EBT_NONE, EBT_NONE, EBT_NONE, EBT_NONE, EBT_NONE,
+		EBT_NONE, EBT_NONE, EBT_NONE, EBT_NONE, EBT_NONE, EBT_NONE, EBT_NONE, EBT_NONE, EBT_NONE, EBT_NONE, EBT_NONE, EBT_NONE,
+		EBT_NONE, EBT_NONE, EBT_NONE, EBT_NONE, EBT_NONE, EBT_NONE, EBT_NONE, EBT_NONE, EBT_NONE, EBT_NONE, EBT_NONE, EBT_NONE,
+		EBT_NONE, EBT_NONE, EBT_NONE, EBT_NONE, EBT_NONE, EBT_NONE, EBT_NONE, EBT_NONE, EBT_NONE, EBT_NONE, EBT_NONE, EBT_NONE,
+		EBT_NONE, EBT_NONE, EBT_NONE, EBT_NONE, EBT_NONE, EBT_NONE, EBT_NONE, EBT_NONE, EBT_NONE, EBT_NONE, EBT_NONE, EBT_NONE,
+	};
+
+	Level() : StaticObject(Vector2(LEVEL_X_OFFSET, LEVEL_Y_OFFSET), CELL_WIDTH, CELL_HEIGHT){}
+
+	void CheckLevelBrickHit(int &nextBallYPosition) const;
+	void CreateLevel(HDC hDC, char level[LEVEL_MAX_ROWS][LEVEL_MAX_BRICKS_IN_ROW]);
+};
+
+class Platform : public DynamicObject
+{
+public:
+	static const int PLATFORM_WIDTH = 28;
+	static const int PLATFORM_HEIGHT = 7;
+	
+	static const int PLATFORM_DEFAULT_X_STEP = SGameEngine::GLOBAL_SCALE * 3;
+
+	static const int PLATFORM_BORDER_ROUND = 3;
+	static const int PLATFORM_CIRCLE_SIZE = 7;
+	static const int PLATFORM_DEFAULT_X_POSITION = Border::BORDER_X_OFFSET;
+	static const int PLATFORM_DEFAULT_Y_POSITION = 185;
+	static const int PLATFORM_DEFAULT_INNER_WIDTH = PLATFORM_CIRCLE_SIZE * 3;
+	static const int PLATFORM_DEFAULT_WIDTH = PLATFORM_DEFAULT_INNER_WIDTH + PLATFORM_CIRCLE_SIZE;
+	static const int PLATFORM_DEFAULT_HEIGHT = PLATFORM_CIRCLE_SIZE;
+
+	int platformInnerWidth;
+	int platformXStep;
+
+	Platform() : DynamicObject(Vector2(PLATFORM_DEFAULT_X_POSITION, PLATFORM_DEFAULT_Y_POSITION), PLATFORM_DEFAULT_WIDTH, PLATFORM_DEFAULT_HEIGHT, 0.0, 0.0), 
+		platformInnerWidth(PLATFORM_DEFAULT_INNER_WIDTH),
+		platformXStep(PLATFORM_DEFAULT_X_STEP)
+	{}
+};
+
+class SRenderer
+{
+public:
 
 	HPEN FirstColorPen,
 		SecondColorPen,
@@ -65,85 +212,47 @@ private:
 		LevelBorderSecondBrush,
 		LevelBorderThirdBrush;
 
-	RECT RedrawPlatformRect, RedrawPrevPlatformRect;
-	RECT RedrawLevelRect, RedrawPrevLevelRect;
-	RECT RedrawBallRect, RedrawPrevBallRect;
-	RECT RedrawBordersRect, RedrawPrevBordersRect;
 
-	/* SCALE OF THE GAME */
-	static const int GLOBAL_SCALE = 3;
+	SRenderer()
+		: 
+		FirstColorPen(nullptr),
+		SecondColorPen(nullptr),
+		WhiteColorPen(nullptr),
+		LetterPen(nullptr),
+		BackgroundPen(nullptr),
+		LevelBorderFirstPen(nullptr),
+		LevelBorderSecondPen(nullptr),
+		LevelBorderThirdPen(nullptr),
 
-	/* BRICK DATA */
-	static const int BRICK_WIDTH = 15;
-	static const int BRICK_HEIGHT = 7;
-	static const int BRICK_BORDER_ROUND = 2;
+		BackgroundBrush(nullptr),
+		FirstColorBrush(nullptr),
+		SecondColorBrush(nullptr),
+		WhiteColorBrush(nullptr),
+		LevelBorderFirstBrush(nullptr),
+		LevelBorderSecondBrush(nullptr),
+		LevelBorderThirdBrush(nullptr)
 
-	/* CELL DATA */
-	static const int CELL_WIDTH = 16;
-	static const int CELL_HEIGHT = 8;
-
-	/* BALL DATA */
-	static const int BALL_DEFAULT_X_POSITION = 20;
-	static const int BALL_DEFAULT_Y_POSITION = 170;
-	static const int BALL_SIZE = 4;
-
-	/* LEVEL DATA */
-
-	static const int LEVEL_BORDER_TILE_WIDTH = 4;
-	static const int LEVEL_BORDER_TILE_HEIGHT = LEVEL_BORDER_TILE_WIDTH;
-
-	static const int LEVEL_BORDER_LEFT_MARGIN = 2;
-	static const int LEVEL_BORDER_RIGHT_MARGIN = 1;
-	static const int LEVEL_BORDER_TOP_MARGIN = 1;
-
-	static const int LEVEL_BORDER_X_OFFSET = 6;
-	static const int LEVEL_BORDER_Y_OFFSET = 4;
-
-	static const int LEVEL_X_OFFSET = 8;
-	static const int LEVEL_Y_OFFSET = 6;
-
-	static const int LEVEL_MAX_X_POSITION = LEVEL_X_OFFSET + CELL_WIDTH * LEVEL_MAX_BRICKS_IN_ROW;
-	static const int LEVEL_MAX_Y_POSITION = 199 - BALL_SIZE;
-
-	/* PLATFORM DATA */
-	static const int PLATFORM_BORDER_ROUND = 3;
-	static const int PLATFORM_CIRCLE_SIZE = 7;
-	static const int PLATFORM_DEFAULT_X_POSITION = LEVEL_BORDER_X_OFFSET;
-	static const int PLATFORM_DEFAULT_Y_POSITION = 185;
-	static const int PLATFORM_DEFAULT_INNER_WIDTH = PLATFORM_CIRCLE_SIZE * 3;
-	static const int PLATFORM_DEFAULT_WIDTH = PLATFORM_DEFAULT_INNER_WIDTH + PLATFORM_CIRCLE_SIZE;
-	static const int PLATFORM_DEFAULT_HEIGHT = PLATFORM_CIRCLE_SIZE;
-
-	int PlatformInnerWidth;
-	int PlatformXPosition;
-	int PlatformXStep;
-
-	int PlatformWidth;
-
-	int BallXPosition;
-	int BallYPosition;
-
-	double BallSpeed, BallDirection;
-
+	{}
+	void OnGameInitRenderer();
+	void DrawFrame(HDC hdc, RECT &paintArea);
+	void CreateBrick(HDC hDC, Vector2 position, EBrickType brickColorType);
+	void RedrawGameObject(GameObject &gameObject) const;
+	void SetPensAndBrushes();
+	void CreateAnimatedBrick(HDC hDC, Vector2 position, EBrickType brickType, ELetterType letterType, int rotationStep);
+private:
 
 	void CreateEllipse(HDC hDC, int left, int top, int right, int bottom, HPEN pen, HBRUSH brush, bool useGlobalScale);
 	void CreateRoundedRect(HDC hDC, int left, int top, int right, int bottom, HPEN pen, HBRUSH brush, int borderRound, bool useGlobalScale);
 	void CreateRect(HDC hDC, int left, int top, int right, int bottom, HPEN pen, HBRUSH brush, bool useGlobalScale);
 	void CreateArc(HDC hDC, int x1, int y1, int x2, int y2, int x3, int y3, int x4, int y4, HPEN pen);
-	void CreatePlatform(HDC hDC, int posX, int posY);
-	void CreateBall(HDC hDC);
-	void CreateBrick(HDC hDC, int posX, int posY, EBrickType brickColorType);
-	void CreateLevel(HDC hDC, char level[LEVEL_MAX_ROWS][LEVEL_MAX_BRICKS_IN_ROW]);
-	void CreatePenAndBrush(unsigned char red, unsigned char green, unsigned char blue, HPEN& pen, HBRUSH& brush);
-	void SetPensAndBrushes();
-	void CreateAnimatedBrick(HDC hDC, int posX, int posY, EBrickType brickType, ELetterType letterType, int rotationStep);
-	void RedrawWindowArea(int left, int top, int right, int bottom, RECT& redrawRect, RECT& prevRedrawRect, bool isBall = false, bool clearBackground = FALSE) const;
-	void RedrawPlatform();
-	void RedrawLevel();
-	void RedrawBall();
-	void RedrawBorders();
-	void MoveBall();
-	void CreateLevelBorder(HDC hDC,int posX, int posY, bool is_horizontal_line);
+	void CreatePlatform(HDC hDC, Vector2 position, Platform &platform);
+	void CreateBall(HDC hDC, Ball &ball);
+	void CreateLevelBorder(HDC hDC, Vector2 position, bool is_horizontal_line);
 	void CreateBounds(HDC hDC);
-	void CheckLevelBrickHit(int& nextBallYPosition);
+	void RedrawWindowArea(int left, int top, int right, int bottom, RECT &redrawRect, RECT &prevRedrawRect, bool isBall = false, bool clearBackground = FALSE) const;
+	void CreatePenAndBrush(unsigned char red, unsigned char green, unsigned char blue, HPEN &pen, HBRUSH &brush);
+
 };
+
+extern SGameEngine Engine;
+extern SRenderer EngineRenderer;

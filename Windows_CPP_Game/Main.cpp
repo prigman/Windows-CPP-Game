@@ -4,11 +4,12 @@
 #include "framework.h"
 #include "Main.h"
 
-constexpr int MAX_LOADSTRING = 100;
+#define MAX_LOADSTRING  100
 
 // Global Variables:
 
 SGameEngine Engine;
+SRenderer EngineRenderer;
 
 HINSTANCE hInst;                                // current instance
 WCHAR szTitle[MAX_LOADSTRING];                  // The title bar text
@@ -163,7 +164,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
             PAINTSTRUCT ps;
             HDC hdc = BeginPaint(hWnd, &ps);
 
-            Engine.DrawFrame(hdc, ps.rcPaint);
+            EngineRenderer.DrawFrame(hdc, ps.rcPaint);
 
             EndPaint(hWnd, &ps);
         }
