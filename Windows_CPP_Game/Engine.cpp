@@ -1,46 +1,43 @@
 #include "Engine.h"
 
-Ball ObjectBall;
-Brick ObjectBrick;
-Platform ObjectPlatform;
-Level ObjectLevel;
-Border ObjectBorder;
-
 void SGameEngine::InitGame(HWND hWnd)
 {
     HWnd = hWnd;
 
     SetTimer(hWnd, TIMER_ID, 50, NULL);
 
-    EngineRenderer.OnGameInitRenderer();
+    EngineRenderer.OnGameInitRenderer(this);
 }
 
-void SRenderer::OnGameInitRenderer()
+void SRenderer::OnGameInitRenderer(SGameEngine *engine)
 {
-    EngineRenderer.SetPensAndBrushes();
+    SetPensAndBrushes();
 
-    EngineRenderer.RedrawGameObject(ObjectLevel);
-    EngineRenderer.RedrawGameObject(ObjectPlatform);
-    EngineRenderer.RedrawGameObject(ObjectBall);
-    EngineRenderer.RedrawGameObject(ObjectBorder);
+    RedrawGameObject(&engine->ObjectLevel);
+    RedrawGameObject(&engine->ObjectPlatform);
+    RedrawGameObject(&engine->ObjectBall);
+    RedrawGameObject(&engine->ObjectBorder);
 }
 
 // draw new information in window
-void SRenderer::DrawFrame(HDC hDC, RECT &paintArea)
+void SRenderer::DrawFrame(HDC hDC, RECT &paintArea, SGameEngine *engine)
 {    
     RECT intersectionRect{};
 
-    if (IntersectRect(&intersectionRect, &paintArea, &ObjectLevel.redrawRect))
-        ObjectLevel.CreateLevel(hDC, ObjectLevel.Level_01); // creating the prepared level with bricks and platform
+    // redraw only specified area
 
-    if (IntersectRect(&intersectionRect, &paintArea, &ObjectPlatform.redrawRect)) // redraw only specified area
-        EngineRenderer.CreatePlatform(hDC, ObjectPlatform.position, ObjectPlatform);
+    if (IntersectRect(&intersectionRect, &paintArea, &engine->ObjectLevel.redrawRect))
+        // creating the prepared level with bricks
+        CreateLevel(hDC, engine->ObjectLevel.Level_01);
 
-    if (IntersectRect(&intersectionRect, &paintArea, &ObjectBall.redrawRect))
-        EngineRenderer.CreateBall(hDC, ObjectBall);
+    if (IntersectRect(&intersectionRect, &paintArea, &engine->ObjectPlatform.redrawRect))
+        CreatePlatform(hDC, &engine->ObjectPlatform);
 
-    if (IntersectRect(&intersectionRect, &paintArea, &ObjectBorder.redrawRect))
-        EngineRenderer.CreateBounds(hDC);
+    if (IntersectRect(&intersectionRect, &paintArea, &engine->ObjectBall.redrawRect))
+        CreateBall(hDC, &engine->ObjectBall);
+
+    if (IntersectRect(&intersectionRect, &paintArea, &engine->ObjectBorder.redrawRect))
+        CreateBounds(hDC);
 
     /*
     * Brick animation
@@ -49,15 +46,15 @@ void SRenderer::DrawFrame(HDC hDC, RECT &paintArea)
     //
     //for (int i = 0; i < 16; i++)
     //{
-    //    CreateAnimatedBrick(hDC, Vector2(20 + i * Level::CELL_WIDTH, 100), EBT_SECOND, ELT_FIRST, i);
-    //    CreateAnimatedBrick(hDC, Vector2(20 + i * Level::CELL_WIDTH, 130), EBT_FIRST, ELT_FIRST, i);
+    //    CreateAnimatedBrick(hDC, Vector2(20 + i * Level::CELL_WIDTH, 100), &engine->ObjectBrick, EBT_SECOND, ELT_FIRST, i);
+    //    CreateAnimatedBrick(hDC, Vector2(20 + i * Level::CELL_WIDTH, 130), &engine->ObjectBrick, EBT_FIRST, ELT_FIRST, i);
     //}
 
 }
 
 int SGameEngine::OnTimer()
 {
-    ObjectBall.MoveBall(ObjectBall);
+    ObjectBall.MoveBall(&this->ObjectLevel, &this->ObjectPlatform);
 
     return 0;
 }
@@ -68,18 +65,12 @@ int SGameEngine::OnKeyDown(EKeyType keyType)
     {
     case EKT_LEFT:
     {
-        ObjectPlatform.position.x -= ObjectPlatform.platformXStep;
-        if (ObjectPlatform.position.x < Border::BORDER_X_OFFSET)
-            ObjectPlatform.position.x = Border::BORDER_X_OFFSET;
-        EngineRenderer.RedrawGameObject(ObjectPlatform);
+        ObjectPlatform.MovePlatform(EKT_LEFT, GLOBAL_SCALE);
         break;
     }
     case EKT_RIGHT:
     {
-        ObjectPlatform.position.x += ObjectPlatform.platformXStep;
-        if (ObjectPlatform.position.x > Level::LEVEL_MAX_X_POSITION - ObjectPlatform.width + 1)
-            ObjectPlatform.position.x = Level::LEVEL_MAX_X_POSITION - ObjectPlatform.width + 1;
-        EngineRenderer.RedrawGameObject(ObjectPlatform);
+        ObjectPlatform.MovePlatform(EKT_RIGHT, GLOBAL_SCALE);
         break;
     }
     case EKT_SPACE:
@@ -88,6 +79,24 @@ int SGameEngine::OnKeyDown(EKeyType keyType)
     }
     }
     return 0;
+}
+
+void Platform::MovePlatform(EKeyType keyType, int globalScale)
+{
+    if (keyType == EKT_RIGHT)
+    {
+        position.x += platformXStep * globalScale;
+        if (position.x > Level::LEVEL_MAX_X_POSITION - width + 1)
+            position.x = Level::LEVEL_MAX_X_POSITION - width + 1;
+        EngineRenderer.RedrawGameObject(this);
+    }
+    else if(keyType == EKT_LEFT)
+    {
+        position.x -= platformXStep * globalScale;
+        if (position.x < Border::BORDER_X_OFFSET)
+            position.x = Border::BORDER_X_OFFSET;
+        EngineRenderer.RedrawGameObject(this);
+    }
 }
 
 void SRenderer::CreateEllipse(HDC hDC, int left, int top, int right, int bottom, HPEN pen, HBRUSH brush, bool useGlobalScale)
@@ -150,10 +159,11 @@ void SRenderer::CreateArc(HDC hDC, int x1, int y1, int x2, int y2, int x3, int y
     Arc(hDC, x1 * SGameEngine::GLOBAL_SCALE, y1 * SGameEngine::GLOBAL_SCALE, x2 * SGameEngine::GLOBAL_SCALE, y2 * SGameEngine::GLOBAL_SCALE, x3 * SGameEngine::GLOBAL_SCALE, y3 * SGameEngine::GLOBAL_SCALE, x4 * SGameEngine::GLOBAL_SCALE, y4 * SGameEngine::GLOBAL_SCALE);
 }
 
-void SRenderer::CreatePlatform(HDC hDC, Vector2 position, Platform &platform)
+void SRenderer::CreatePlatform(HDC hDC, Platform *platform)
 {
+    Vector2 position = platform->position;
     // draw a background before creating a platform
-    CreateRect(hDC, platform.redrawPrevRect.left, platform.redrawPrevRect.top, platform.redrawPrevRect.right, platform.redrawPrevRect.bottom, BackgroundPen, BackgroundBrush, false);
+    CreateRect(hDC, platform->redrawPrevRect.left, platform->redrawPrevRect.top, platform->redrawPrevRect.right, platform->redrawPrevRect.bottom, BackgroundPen, BackgroundBrush, false);
 
     int platformXOffset = 4;
     int platformYOffset = 1;
@@ -161,20 +171,20 @@ void SRenderer::CreatePlatform(HDC hDC, Vector2 position, Platform &platform)
     int platformHeight = 5;
 
     CreateEllipse(hDC, position.x, position.y, position.x + Platform::PLATFORM_CIRCLE_SIZE, position.y + Platform::PLATFORM_CIRCLE_SIZE, FirstColorPen, FirstColorBrush, true);
-    CreateEllipse(hDC, position.x + platform.platformInnerWidth, position.y, position.x + Platform::PLATFORM_CIRCLE_SIZE + platform.platformInnerWidth, position.y + Platform::PLATFORM_CIRCLE_SIZE, FirstColorPen, FirstColorBrush, true);
+    CreateEllipse(hDC, position.x + platform->platformInnerWidth, position.y, position.x + Platform::PLATFORM_CIRCLE_SIZE + platform->platformInnerWidth, position.y + Platform::PLATFORM_CIRCLE_SIZE, FirstColorPen, FirstColorBrush, true);
 
-    CreateRoundedRect(hDC, position.x + platformXOffset, position.y + platformYOffset, position.x + platformXOffset + platform.platformInnerWidth - 1, position.y + platformYOffset + platformHeight, SecondColorPen, SecondColorBrush, Platform::PLATFORM_BORDER_ROUND, true);
+    CreateRoundedRect(hDC, position.x + platformXOffset, position.y + platformYOffset, position.x + platformXOffset + platform->platformInnerWidth - 1, position.y + platformYOffset + platformHeight, SecondColorPen, SecondColorBrush, Platform::PLATFORM_BORDER_ROUND, true);
 
     // draw highlight on the ellipse
     CreateArc(hDC, position.x + 1, position.y + 1, position.x + Platform::PLATFORM_CIRCLE_SIZE - 1, position.y + Platform::PLATFORM_CIRCLE_SIZE - 1, position.x + 1 + 1, position.y + 1, position.x + 1, position.y + 1 + 2, WhiteColorPen);
 }
 
-void SRenderer::CreateBall(HDC hDC, Ball &ball)
+void SRenderer::CreateBall(HDC hDC, Ball *ball)
 {
     // draw a background before creating a platform
-    CreateEllipse(hDC, ball.redrawPrevRect.left, ball.redrawPrevRect.top, ball.redrawPrevRect.right, ball.redrawPrevRect.bottom, BackgroundPen, BackgroundBrush, false);
+    CreateEllipse(hDC, ball->redrawPrevRect.left, ball->redrawPrevRect.top, ball->redrawPrevRect.right, ball->redrawPrevRect.bottom, BackgroundPen, BackgroundBrush, false);
 
-    CreateEllipse(hDC, ball.redrawRect.left, ball.redrawRect.top, ball.redrawRect.right, ball.redrawRect.bottom, WhiteColorPen, WhiteColorBrush, false);
+    CreateEllipse(hDC, ball->redrawRect.left, ball->redrawRect.top, ball->redrawRect.right, ball->redrawRect.bottom, WhiteColorPen, WhiteColorBrush, false);
 }
 
 void SRenderer::CreateBrick(HDC hDC, Vector2 position, EBrickType brickColorType) // create brick based on its color type
@@ -209,11 +219,11 @@ void SRenderer::CreateBrick(HDC hDC, Vector2 position, EBrickType brickColorType
     CreateRoundedRect(hDC, position.x, position.y, position.x + Brick::BRICK_WIDTH, position.y + Brick::BRICK_HEIGHT, pen, brush, Brick::BRICK_BORDER_ROUND, true);
 }
 
-void Level::CreateLevel(HDC hDC, char level[LEVEL_MAX_ROWS][LEVEL_MAX_BRICKS_IN_ROW]) // draw bricks in rows
+void SRenderer::CreateLevel(HDC hDC, char level[Level::LEVEL_MAX_ROWS][Level::LEVEL_MAX_BRICKS_IN_ROW]) // draw bricks in rows
 {
-    for (int i = 0; i < LEVEL_MAX_ROWS; i++)
-        for (int j = 0; j < LEVEL_MAX_BRICKS_IN_ROW; j++)
-            EngineRenderer.CreateBrick(hDC, Vector2(LEVEL_X_OFFSET + j * CELL_WIDTH, LEVEL_Y_OFFSET + i * CELL_HEIGHT), (EBrickType)level[i][j]);
+    for (int i = 0; i < Level::LEVEL_MAX_ROWS; i++)
+        for (int j = 0; j < Level::LEVEL_MAX_BRICKS_IN_ROW; j++)
+            CreateBrick(hDC, Vector2(Level::LEVEL_X_OFFSET + j * Level::CELL_WIDTH, Level::LEVEL_Y_OFFSET + i * Level::CELL_HEIGHT), (EBrickType)level[i][j]);
 }
 
 void SRenderer::CreatePenAndBrush(unsigned char red, unsigned char green, unsigned char blue, HPEN &pen, HBRUSH &brush)
@@ -234,7 +244,7 @@ void SRenderer::SetPensAndBrushes()
     CreatePenAndBrush(128, 255, 255, SecondColorPen, SecondColorBrush); // cyan color
 }
 
-void SRenderer::CreateAnimatedBrick(HDC hDC, Vector2 position, EBrickType brickType, ELetterType letterType, int rotationStep)
+void SRenderer::CreateAnimatedBrick(HDC hDC, Vector2 position, Brick *brick, EBrickType brickType, ELetterType letterType, int rotationStep)
 {
     position.x *= SGameEngine::GLOBAL_SCALE;
 
@@ -263,20 +273,20 @@ void SRenderer::CreateAnimatedBrick(HDC hDC, Vector2 position, EBrickType brickT
         {
         case EBT_SECOND:
         {
-            frontColorPen = EngineRenderer.FirstColorPen;
-            frontColorBrush = EngineRenderer.FirstColorBrush;
+            frontColorPen = FirstColorPen;
+            frontColorBrush = FirstColorBrush;
 
-            backColorPen = EngineRenderer.SecondColorPen;
-            backColorBrush = EngineRenderer.SecondColorBrush;
+            backColorPen = SecondColorPen;
+            backColorBrush = SecondColorBrush;
             break;
         }
         default:
         {
-            frontColorPen = EngineRenderer.SecondColorPen;
-            frontColorBrush = EngineRenderer.SecondColorBrush;
+            frontColorPen = SecondColorPen;
+            frontColorBrush = SecondColorBrush;
 
-            backColorPen = EngineRenderer.FirstColorPen;
-            backColorBrush = EngineRenderer.FirstColorBrush;
+            backColorPen = FirstColorPen;
+            backColorBrush = FirstColorBrush;
             break;
         }
         }
@@ -287,20 +297,20 @@ void SRenderer::CreateAnimatedBrick(HDC hDC, Vector2 position, EBrickType brickT
         {
         case EBT_FIRST:
         {
-            frontColorPen = EngineRenderer.FirstColorPen;
-            frontColorBrush = EngineRenderer.FirstColorBrush;
+            frontColorPen = FirstColorPen;
+            frontColorBrush = FirstColorBrush;
 
-            backColorPen = EngineRenderer.SecondColorPen;
-            backColorBrush = EngineRenderer.SecondColorBrush;
+            backColorPen = SecondColorPen;
+            backColorBrush = SecondColorBrush;
             break;
         }
         default:
         {
-            frontColorPen = EngineRenderer.SecondColorPen;
-            frontColorBrush = EngineRenderer.SecondColorBrush;
+            frontColorPen = SecondColorPen;
+            frontColorBrush = SecondColorBrush;
 
-            backColorPen = EngineRenderer.FirstColorPen;
-            backColorBrush = EngineRenderer.FirstColorBrush;
+            backColorPen = FirstColorPen;
+            backColorBrush = FirstColorBrush;
             break;
         }
         }
@@ -311,7 +321,7 @@ void SRenderer::CreateAnimatedBrick(HDC hDC, Vector2 position, EBrickType brickT
         // background output
         CreateRect(hDC, position.x, position.y + brickHalfHeight - SGameEngine::GLOBAL_SCALE, position.x + Brick::BRICK_WIDTH * SGameEngine::GLOBAL_SCALE, position.y + brickHalfHeight, backColorPen, backColorBrush, false); // 0, 0 because of xForm's eDx, eDy
         // front side output
-        CreateRect(hDC, position.x, position.y + brickHalfHeight, position.x + ObjectBrick.width * SGameEngine::GLOBAL_SCALE, position.y + brickHalfHeight + SGameEngine::GLOBAL_SCALE - 1, frontColorPen, frontColorBrush, false); // 0, 0 because of xForm's eDx, eDy
+        CreateRect(hDC, position.x, position.y + brickHalfHeight, position.x + brick->width * SGameEngine::GLOBAL_SCALE, position.y + brickHalfHeight + SGameEngine::GLOBAL_SCALE - 1, frontColorPen, frontColorBrush, false); // 0, 0 because of xForm's eDx, eDy
     }
     else
     {
@@ -330,11 +340,11 @@ void SRenderer::CreateAnimatedBrick(HDC hDC, Vector2 position, EBrickType brickT
         brickBackPartOffset = (int)round(offset);
 
         //background output
-        CreateRect(hDC, 0, -brickHalfHeight - brickBackPartOffset, ObjectBrick.width * SGameEngine::GLOBAL_SCALE, brickHalfHeight - brickBackPartOffset, backColorPen, backColorBrush, false); // 0, 0 because of xForm's eDx, eDy
+        CreateRect(hDC, 0, -brickHalfHeight - brickBackPartOffset, brick->width * SGameEngine::GLOBAL_SCALE, brickHalfHeight - brickBackPartOffset, backColorPen, backColorBrush, false); // 0, 0 because of xForm's eDx, eDy
 
 
         // front side output
-        CreateRect(hDC, 0, -brickHalfHeight, ObjectBrick.BRICK_WIDTH * SGameEngine::GLOBAL_SCALE, brickHalfHeight, frontColorPen, frontColorBrush, false); // 0, 0 because of xForm's eDx, eDy
+        CreateRect(hDC, 0, -brickHalfHeight, brick->BRICK_WIDTH * SGameEngine::GLOBAL_SCALE, brickHalfHeight, frontColorPen, frontColorBrush, false); // 0, 0 because of xForm's eDx, eDy
 
         if (rotationStep > 4 && rotationStep <= 12)
         {
@@ -373,9 +383,9 @@ void SRenderer::RedrawWindowArea(int left, int top, int right, int bottom, RECT 
     InvalidateRect(Engine.HWnd, &redrawRect, clearBackground);
 }
 
-void SRenderer::RedrawGameObject(GameObject &gameObject) const
+void SRenderer::RedrawGameObject(GameObject *gameObject) const
 {
-    RedrawWindowArea(gameObject.position.x, gameObject.position.y, gameObject.width, gameObject.height, gameObject.redrawRect, gameObject.redrawPrevRect);
+    RedrawWindowArea(gameObject->position.x, gameObject->position.y, gameObject->width, gameObject->height, gameObject->redrawRect, gameObject->redrawPrevRect);
 }
 
 //void Platform::RedrawPlatform()
@@ -398,67 +408,67 @@ void SRenderer::RedrawGameObject(GameObject &gameObject) const
 //    EngineRenderer.RedrawWindowArea(LEVEL_BORDER_X_OFFSET, LEVEL_BORDER_Y_OFFSET, LEVEL_BORDER_TILE_WIDTH, LEVEL_BORDER_TILE_HEIGHT, EngineRenderer.RedrawBordersRect, EngineRenderer.RedrawPrevBordersRect);
 //}
 
-void Ball::MoveBall(Ball &ball)
+void Ball::MoveBall(Level *level, Platform *platform)
 {
     int nextBallXPosition, nextBallYPosition, 
         maxXPosition = Level::LEVEL_MAX_X_POSITION - BALL_SIZE, platformYPosition = Platform::PLATFORM_DEFAULT_Y_POSITION - BALL_SIZE;
 
-    nextBallXPosition = ball.position.x + (int)(ball.speed * cos(ball.direction));
-    nextBallYPosition = ball.position.y - (int)(ball.speed * sin(ball.direction));
+    nextBallXPosition = position.x + (int)(speed * cos(direction));
+    nextBallYPosition = position.y - (int)(speed * sin(direction));
 
     if (nextBallXPosition < Border::BORDER_X_OFFSET)
     {
         nextBallXPosition = Border::BORDER_X_OFFSET - (nextBallXPosition - Border::BORDER_X_OFFSET);
-        ball.direction = M_PI - ball.direction;
+        direction = M_PI - direction;
     }
 
     if (nextBallYPosition < Border::BORDER_Y_OFFSET)
     {
         nextBallYPosition = Border::BORDER_Y_OFFSET - (nextBallYPosition - Border::BORDER_Y_OFFSET);
-        ball.direction = -ball.direction;
+        direction = -direction;
     }
 
     if (nextBallXPosition > maxXPosition)
     {
         nextBallXPosition = maxXPosition - (nextBallXPosition - maxXPosition);
-        ball.direction = M_PI - ball.direction;
+        direction = M_PI - direction;
     }
 
     if (nextBallYPosition > Level::LEVEL_MAX_Y_POSITION)
     {
         nextBallYPosition = Level::LEVEL_MAX_Y_POSITION - (nextBallYPosition - Level::LEVEL_MAX_Y_POSITION);
-        ball.direction = M_PI + (M_PI - ball.direction);
+        direction = M_PI + (M_PI - direction);
     }
 
     if (nextBallYPosition > platformYPosition)
     {
-        if (nextBallXPosition >= ObjectPlatform.position.x && nextBallXPosition <= ObjectPlatform.position.x + ObjectPlatform.width)
+        if (nextBallXPosition >= platform->position.x && nextBallXPosition <= platform->position.x + platform->width)
         {
             nextBallYPosition = platformYPosition - (nextBallYPosition - platformYPosition);
-            ball.direction = M_PI + (M_PI - ball.direction);
+            direction = M_PI + (M_PI - direction);
         }
     }
 
-    ObjectLevel.CheckLevelBrickHit(nextBallYPosition);
+    level->CheckLevelBrickHit(nextBallYPosition, direction);
         
-    ball.position.x = nextBallXPosition;
-    ball.position.y = nextBallYPosition;
+    position.x = nextBallXPosition;
+    position.y = nextBallYPosition;
 
-    EngineRenderer.RedrawGameObject(ball);
+    EngineRenderer.RedrawGameObject(this);
 }
 
 void SRenderer::CreateLevelBorder(HDC hDC, Vector2 position, bool is_horizontal_line)
 {
     if (is_horizontal_line)
     {
-        CreateRect(hDC, position.x, position.y, position.x + Border::BORDER_TILE_WIDTH, position.y + Border::BORDER_TILE_HEIGHT, EngineRenderer.LevelBorderFirstPen, EngineRenderer.LevelBorderFirstBrush, true);
-        CreateRect(hDC, position.x, position.y, position.x + Border::BORDER_TILE_WIDTH, position.y + 1, EngineRenderer.LevelBorderSecondPen, EngineRenderer.LevelBorderSecondBrush, true);
+        CreateRect(hDC, position.x, position.y, position.x + Border::BORDER_TILE_WIDTH, position.y + Border::BORDER_TILE_HEIGHT, LevelBorderFirstPen, LevelBorderFirstBrush, true);
+        CreateRect(hDC, position.x, position.y, position.x + Border::BORDER_TILE_WIDTH, position.y + 1, LevelBorderSecondPen, LevelBorderSecondBrush, true);
         CreateRect(hDC, position.x + Border::BORDER_TILE_WIDTH / 2, position.y + Border::BORDER_TILE_HEIGHT / 2, position.x + Border::BORDER_TILE_WIDTH / 2 + 1, position.y + Border::BORDER_TILE_HEIGHT / 2 + 1, LevelBorderThirdPen, LevelBorderThirdBrush, true);
     }
     else
     {
-        CreateRect(hDC, position.x, position.y, position.x + Border::BORDER_TILE_WIDTH, position.y + Border::BORDER_TILE_HEIGHT, EngineRenderer.LevelBorderFirstPen, EngineRenderer.LevelBorderFirstBrush, true);
-        CreateRect(hDC, position.x, position.y, position.x + 1, position.y + Border::BORDER_TILE_HEIGHT, EngineRenderer.LevelBorderSecondPen, EngineRenderer.LevelBorderSecondBrush, true);
+        CreateRect(hDC, position.x, position.y, position.x + Border::BORDER_TILE_WIDTH, position.y + Border::BORDER_TILE_HEIGHT, LevelBorderFirstPen, LevelBorderFirstBrush, true);
+        CreateRect(hDC, position.x, position.y, position.x + 1, position.y + Border::BORDER_TILE_HEIGHT, LevelBorderSecondPen, LevelBorderSecondBrush, true);
         CreateRect(hDC, position.x + Border::BORDER_TILE_WIDTH / 2, position.y + Border::BORDER_TILE_HEIGHT / 2, position.x + Border::BORDER_TILE_WIDTH / 2 + 1, position.y + Border::BORDER_TILE_HEIGHT / 2 - 1, LevelBorderThirdPen, LevelBorderThirdBrush, true);
     }
 }
@@ -483,7 +493,7 @@ void SRenderer::CreateBounds(HDC hDC)
 
 }
 
-void Level::CheckLevelBrickHit(int &nextBallYPosition) const
+void Level::CheckLevelBrickHit(int &nextBallYPosition, double &direction) const
 {
     int brickYPosition = LEVEL_Y_OFFSET + LEVEL_MAX_ROWS * CELL_HEIGHT;
 
@@ -497,7 +507,7 @@ void Level::CheckLevelBrickHit(int &nextBallYPosition) const
             else if (nextBallYPosition < brickYPosition)
             {
                 nextBallYPosition = brickYPosition - (nextBallYPosition - brickYPosition);
-                ObjectBall.direction = -ObjectBall.direction;
+                direction = -direction;
             }
         }
         brickYPosition -= CELL_HEIGHT;
