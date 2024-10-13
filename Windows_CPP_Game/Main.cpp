@@ -164,7 +164,12 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
             PAINTSTRUCT ps;
             HDC hdc = BeginPaint(hWnd, &ps);
 
-            EngineRenderer.DrawFrame(hdc, ps.rcPaint, &Engine);
+            EngineRenderer.DrawFrame(hdc, ps.rcPaint, 
+                &Engine.objectLevel, 
+                &Engine.objectPlatform, 
+                &Engine.objectBall, 
+                &Engine.objectBrick, 
+                &Engine.objectBorder);
 
             EndPaint(hWnd, &ps);
         }

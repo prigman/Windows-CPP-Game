@@ -19,6 +19,48 @@
     <Filter Include="Engine">
       <UniqueIdentifier>{b4293f7b-f7de-4a17-abb0-3e46dd48b651}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Config">
+      <UniqueIdentifier>{df03078f-0b13-4856-8e52-cb697a65639d}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Objects">
+      <UniqueIdentifier>{f56a86d7-4697-45a4-a7aa-1d4fa22a7e04}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Objects\Ball">
+      <UniqueIdentifier>{d599b6e9-f41c-4317-9cd6-d85700237769}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Objects\Platform">
+      <UniqueIdentifier>{7810d8a7-1204-4508-89f4-05cbc70dbda4}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Objects\Border">
+      <UniqueIdentifier>{aa57c37b-0a0e-44d6-99ed-ad9798525d14}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Objects\Brick">
+      <UniqueIdentifier>{bfb2bb92-8fdb-4822-97ab-762c3dac04c2}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Renderer">
+      <UniqueIdentifier>{375a5d9d-27f8-4915-b1b0-1b0f425da656}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Utils">
+      <UniqueIdentifier>{9e812f81-2e0e-4a8d-ab9d-b75a05ca81df}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Utils\Vector2">
+      <UniqueIdentifier>{ddb5115c-91d0-4ae3-8b26-e62556838d40}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Objects\Game Object">
+      <UniqueIdentifier>{9ac21344-65b8-4d35-a168-f7fbef76a708}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Objects\Static Object">
+      <UniqueIdentifier>{652999f6-317c-42ef-9107-a365a211abd8}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Objects\Dynamic Object">
+      <UniqueIdentifier>{477257d4-501c-46fc-9069-4986ae1dfa0e}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Objects\Level">
+      <UniqueIdentifier>{7920bcf2-0705-4c2f-896a-f82854860a95}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Enums">
+      <UniqueIdentifier>{1cfc09f8-0fc2-4114-9303-dd2fe3708894}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="framework.h">
@@ -35,6 +77,48 @@
     </ClInclude>
     <ClInclude Include="Engine.h">
       <Filter>Engine</Filter>
+    </ClInclude>
+    <ClInclude Include="Config.h">
+      <Filter>Config</Filter>
+    </ClInclude>
+    <ClInclude Include="Ball.h">
+      <Filter>Objects\Ball</Filter>
+    </ClInclude>
+    <ClInclude Include="Platform.h">
+      <Filter>Objects\Platform</Filter>
+    </ClInclude>
+    <ClInclude Include="Border.h">
+      <Filter>Objects\Border</Filter>
+    </ClInclude>
+    <ClInclude Include="Brick.h">
+      <Filter>Objects\Brick</Filter>
+    </ClInclude>
+    <ClInclude Include="Renderer.h">
+      <Filter>Renderer</Filter>
+    </ClInclude>
+    <ClInclude Include="Vector2.h">
+      <Filter>Utils\Vector2</Filter>
+    </ClInclude>
+    <ClInclude Include="GameObject.h">
+      <Filter>Objects\Game Object</Filter>
+    </ClInclude>
+    <ClInclude Include="StaticObject.h">
+      <Filter>Objects\Static Object</Filter>
+    </ClInclude>
+    <ClInclude Include="DynamicObject.h">
+      <Filter>Objects\Dynamic Object</Filter>
+    </ClInclude>
+    <ClInclude Include="Level.h">
+      <Filter>Objects\Level</Filter>
+    </ClInclude>
+    <ClInclude Include="EKeyType.h">
+      <Filter>Enums</Filter>
+    </ClInclude>
+    <ClInclude Include="EBrickType.h">
+      <Filter>Enums</Filter>
+    </ClInclude>
+    <ClInclude Include="ELetterType.h">
+      <Filter>Enums</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -56,6 +140,36 @@
     </ClCompile>
     <ClCompile Include="Engine.cpp">
       <Filter>Engine</Filter>
+    </ClCompile>
+    <ClCompile Include="Config.cpp">
+      <Filter>Config</Filter>
+    </ClCompile>
+    <ClCompile Include="Ball.cpp">
+      <Filter>Objects\Ball</Filter>
+    </ClCompile>
+    <ClCompile Include="Platform.cpp">
+      <Filter>Objects\Platform</Filter>
+    </ClCompile>
+    <ClCompile Include="Border.cpp">
+      <Filter>Objects\Border</Filter>
+    </ClCompile>
+    <ClCompile Include="Brick.cpp">
+      <Filter>Objects\Brick</Filter>
+    </ClCompile>
+    <ClCompile Include="Renderer.cpp">
+      <Filter>Renderer</Filter>
+    </ClCompile>
+    <ClCompile Include="GameObject.cpp">
+      <Filter>Objects\Game Object</Filter>
+    </ClCompile>
+    <ClCompile Include="StaticObject.cpp">
+      <Filter>Objects\Static Object</Filter>
+    </ClCompile>
+    <ClCompile Include="DynamicObject.cpp">
+      <Filter>Objects\Dynamic Object</Filter>
+    </ClCompile>
+    <ClCompile Include="Level.cpp">
+      <Filter>Objects\Level</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>
