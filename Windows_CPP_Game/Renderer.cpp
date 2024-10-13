@@ -83,12 +83,6 @@ void SRenderer::CreateLevelBorder(HDC hDC, Vector2 position, bool is_horizontal_
     }
 }
 
-void SRenderer::CreatePenAndBrush(unsigned char red, unsigned char green, unsigned char blue, HPEN &pen, HBRUSH &brush)
-{
-    pen = CreatePen(PS_SOLID, 0, RGB(red, green, blue));
-    brush = CreateSolidBrush(RGB(red, green, blue));
-}
-
 void SRenderer::DrawFrame(HDC hDC, RECT &paintArea, Level *level, Platform *platform, Ball *ball, Brick *brick, Border *border)
 {    
     RECT intersectionRect{};
@@ -98,6 +92,9 @@ void SRenderer::DrawFrame(HDC hDC, RECT &paintArea, Level *level, Platform *plat
     if (IntersectRect(&intersectionRect, &paintArea, &level->redrawRect))
         // creating the prepared level with bricks
         CreateLevel(hDC, level->Level_01);
+
+    if (IntersectRect(&intersectionRect, &paintArea, &brick->redrawRect))
+        CreateBrick(hDC, brick->position, EBT_FADED);
 
     if (IntersectRect(&intersectionRect, &paintArea, &platform->redrawRect))
         CreatePlatform(hDC, platform->position, platform->platformInnerWidth, platform->redrawPrevRect);
@@ -119,6 +116,12 @@ void SRenderer::DrawFrame(HDC hDC, RECT &paintArea, Level *level, Platform *plat
     //    CreateAnimatedBrick(hDC, Vector2(20 + i * Level::CELL_WIDTH, 130), &engine->objectBrick, EBT_FIRST, ELT_FIRST, i);
     //}
 
+}
+
+void SRenderer::CreatePenAndBrush(unsigned char red, unsigned char green, unsigned char blue, HPEN &pen, HBRUSH &brush)
+{
+    pen = CreatePen(PS_SOLID, 0, RGB(red, green, blue));
+    brush = CreateSolidBrush(RGB(red, green, blue));
 }
 
 void SRenderer::SetPensAndBrushes()
@@ -154,6 +157,12 @@ void SRenderer::CreateBrick(HDC hDC, Vector2 position, EBrickType brickColorType
     {
         pen = secondColorPen;
         brush = secondColorBrush;
+        break;
+    }
+    case EBT_FADED:
+    {
+        pen = fadeColorPen;
+        brush = fadeColorBrush;
         break;
     }
     default:
@@ -283,6 +292,9 @@ void SRenderer::CreateLevel(HDC hDC, const char level[SConfig::LEVEL_MAX_ROWS][S
     for (int i = 0; i < SConfig::LEVEL_MAX_ROWS; i++)
         for (int j = 0; j < SConfig::LEVEL_MAX_BRICKS_IN_ROW; j++)
             CreateBrick(hDC, Vector2(SConfig::LEVEL_X_OFFSET + j * SConfig::CELL_WIDTH, SConfig::LEVEL_Y_OFFSET + i * SConfig::CELL_HEIGHT), (EBrickType)level[i][j]);
+
+    /* faded brick */
+    //CreateBrick(hDC, Vector2(SConfig::LEVEL_X_OFFSET, SConfig::LEVEL_Y_OFFSET), EBT_FADED, fadeStep);
 }
 
 void SRenderer::CreatePlatform(HDC hDC, Vector2 platformPosition, int platformInnerWidth, RECT redrawPrevRect)

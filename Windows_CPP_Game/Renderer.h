@@ -28,13 +28,13 @@ private:
 	void CreateRect(HDC hDC, int left, int top, int right, int bottom, HPEN pen, HBRUSH brush, bool useGlobalScale);
 	void CreateArc(HDC hDC, int x1, int y1, int x2, int y2, int x3, int y3, int x4, int y4, HPEN pen);
 	void CreateLevelBorder(HDC hDC, Vector2 position, bool is_horizontal_line);
-	void CreatePenAndBrush(unsigned char red, unsigned char green, unsigned char blue, HPEN &pen, HBRUSH &brush);
 public:
 
 	HWND hWnd;
 
 	HPEN firstColorPen,
 		secondColorPen,
+		fadeColorPen,
 		whiteColorPen,
 		letterPen,
 		backgroundPen,
@@ -45,6 +45,7 @@ public:
 	HBRUSH firstColorBrush, 
 		secondColorBrush,
 		whiteColorBrush,
+		fadeColorBrush,
 		backgroundBrush,
 		levelBorderFirstBrush,
 		levelBorderSecondBrush,
@@ -74,6 +75,7 @@ public:
 
 	{}
 	void DrawFrame(HDC hDC, RECT &paintArea, Level *level, Platform *platform, Ball *ball, Brick *brick, Border *border);
+	void CreatePenAndBrush(unsigned char red, unsigned char green, unsigned char blue, HPEN &pen, HBRUSH &brush);
 	void SetPensAndBrushes();
 	void CreateBrick(HDC hDC, Vector2 position, EBrickType brickColorType);
 	void CreateAnimatedBrick(HDC hDC, Vector2 position, int brickWidth, EBrickType brickType, ELetterType letterType, int rotationStep);

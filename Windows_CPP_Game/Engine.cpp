@@ -15,7 +15,7 @@ void SGameEngine::OnGameInitRedraw(HWND hWnd)
 void SGameEngine::InitGame(HWND hWnd)
 {
     //hWnd = hWnd;
-    SetTimer(hWnd, TIMER_ID, 50, NULL);
+    SetTimer(hWnd, TIMER_ID, 1000 / SConfig::FRAMES_PER_SECOND, NULL);
     
     OnGameInitRedraw(hWnd);
 }
@@ -23,7 +23,7 @@ void SGameEngine::InitGame(HWND hWnd)
 int SGameEngine::OnTimer()
 {
     objectBall.MoveBall(this->objectLevel.Level_01, this->objectPlatform.position, objectPlatform.width);
-
+    objectBrick.Act();
     return 0;
 }
 

@@ -35,4 +35,6 @@ public:
 
 	static const int LEVEL_MAX_X_POSITION = LEVEL_X_OFFSET + CELL_WIDTH * LEVEL_MAX_BRICKS_IN_ROW;
 	static const int LEVEL_MAX_Y_POSITION = 199 - SConfig::BALL_SIZE;
+
+	static const int FRAMES_PER_SECOND = 20;
 };
