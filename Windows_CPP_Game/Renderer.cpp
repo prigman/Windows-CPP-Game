@@ -7,6 +7,31 @@
 
 #include "Renderer.h"
 
+SRenderer::SRenderer()
+    :
+    hWnd(nullptr),
+
+    firstColorPen(nullptr),
+    secondColorPen(nullptr),
+    whiteColorPen(nullptr),
+    fadeColorPen(nullptr),
+    letterPen(nullptr),
+    backgroundPen(nullptr),
+    levelBorderFirstPen(nullptr),
+    levelBorderSecondPen(nullptr),
+    levelBorderThirdPen(nullptr),
+
+    backgroundBrush(nullptr),
+    firstColorBrush(nullptr),
+    secondColorBrush(nullptr),
+    whiteColorBrush(nullptr),
+    fadeColorBrush(nullptr),
+    levelBorderFirstBrush(nullptr),
+    levelBorderSecondBrush(nullptr),
+    levelBorderThirdBrush(nullptr)
+
+{}
+
 void SRenderer::CreateEllipse(HDC hDC, int left, int top, int right, int bottom, HPEN pen, HBRUSH brush, bool useGlobalScale)
 {
     if (useGlobalScale)
@@ -292,9 +317,6 @@ void SRenderer::CreateLevel(HDC hDC, const char level[SConfig::LEVEL_MAX_ROWS][S
     for (int i = 0; i < SConfig::LEVEL_MAX_ROWS; i++)
         for (int j = 0; j < SConfig::LEVEL_MAX_BRICKS_IN_ROW; j++)
             CreateBrick(hDC, Vector2(SConfig::LEVEL_X_OFFSET + j * SConfig::CELL_WIDTH, SConfig::LEVEL_Y_OFFSET + i * SConfig::CELL_HEIGHT), (EBrickType)level[i][j]);
-
-    /* faded brick */
-    //CreateBrick(hDC, Vector2(SConfig::LEVEL_X_OFFSET, SConfig::LEVEL_Y_OFFSET), EBT_FADED, fadeStep);
 }
 
 void SRenderer::CreatePlatform(HDC hDC, Vector2 platformPosition, int platformInnerWidth, RECT redrawPrevRect)

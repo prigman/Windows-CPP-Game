@@ -171,5 +171,8 @@
     <ClCompile Include="Level.cpp">
       <Filter>Objects\Level</Filter>
     </ClCompile>
+    <ClCompile Include="Vector2.cpp">
+      <Filter>Utils\Vector2</Filter>
+    </ClCompile>
   </ItemGroup>
 </Project>

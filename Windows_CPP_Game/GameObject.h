@@ -9,8 +9,7 @@ public:
 	Vector2 position;
 	int width;
 	int height;
-	GameObject(): position(0,0), width(0), height(0), redrawRect{0, 0, 0, 0}, redrawPrevRect{0, 0, 0, 0} {}
-	GameObject(Vector2 position, int width, int height) : position(position), width(width), height(height), redrawRect{0, 0, 0, 0}, redrawPrevRect{0, 0, 0, 0} {}
-	
+	GameObject();
+	GameObject(Vector2 position, int width, int height);
 	void RedrawGameObject(bool isBallObject = false);
 };

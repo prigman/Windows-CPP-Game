@@ -1,5 +1,9 @@
 #include "Ball.h"
 
+Ball::Ball() : 
+    DynamicObject(Vector2(BALL_DEFAULT_X_POSITION, BALL_DEFAULT_Y_POSITION), SConfig::BALL_SIZE, SConfig::BALL_SIZE, 3.0, M_PI - M_PI_4) 
+{}
+
 void Ball::CheckLevelBrickHit(const char level[SConfig::LEVEL_MAX_ROWS][SConfig::LEVEL_MAX_BRICKS_IN_ROW], int &nextBallYPosition, double &direction) const
 {
     int brickYPosition = SConfig::LEVEL_Y_OFFSET + SConfig::LEVEL_MAX_ROWS * SConfig::CELL_HEIGHT;

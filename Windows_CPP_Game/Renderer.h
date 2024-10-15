@@ -52,28 +52,7 @@ public:
 		levelBorderThirdBrush;
 
 
-	SRenderer()
-		:
-		hWnd(nullptr),
-
-		firstColorPen(nullptr),
-		secondColorPen(nullptr),
-		whiteColorPen(nullptr),
-		letterPen(nullptr),
-		backgroundPen(nullptr),
-		levelBorderFirstPen(nullptr),
-		levelBorderSecondPen(nullptr),
-		levelBorderThirdPen(nullptr),
-
-		backgroundBrush(nullptr),
-		firstColorBrush(nullptr),
-		secondColorBrush(nullptr),
-		whiteColorBrush(nullptr),
-		levelBorderFirstBrush(nullptr),
-		levelBorderSecondBrush(nullptr),
-		levelBorderThirdBrush(nullptr)
-
-	{}
+	SRenderer();
 	void DrawFrame(HDC hDC, RECT &paintArea, Level *level, Platform *platform, Ball *ball, Brick *brick, Border *border);
 	void CreatePenAndBrush(unsigned char red, unsigned char green, unsigned char blue, HPEN &pen, HBRUSH &brush);
 	void SetPensAndBrushes();

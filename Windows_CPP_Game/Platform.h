@@ -19,10 +19,7 @@ public:
 	int platformInnerWidth;
 	int platformXStep;
 
-	Platform() : StaticObject(Vector2(SConfig::PLATFORM_DEFAULT_X_POSITION, SConfig::PLATFORM_DEFAULT_Y_POSITION), PLATFORM_DEFAULT_WIDTH, PLATFORM_DEFAULT_HEIGHT), 
-		platformInnerWidth(PLATFORM_DEFAULT_INNER_WIDTH),
-		platformXStep(PLATFORM_DEFAULT_X_STEP)
-	{}
+	Platform();
 
 	void MovePlatform(EKeyType keyType);
 };

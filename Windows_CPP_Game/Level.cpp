@@ -1,5 +1,8 @@
-
 #include "Level.h"
+
+Level::Level() : 
+	StaticObject(Vector2(SConfig::LEVEL_X_OFFSET, SConfig::LEVEL_Y_OFFSET), SConfig::CELL_WIDTH, SConfig::CELL_HEIGHT)
+{}
 
 char Level::Level_01[SConfig::LEVEL_MAX_ROWS][SConfig::LEVEL_MAX_BRICKS_IN_ROW] =
 {

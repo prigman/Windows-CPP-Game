@@ -159,6 +159,7 @@
     <ClCompile Include="Renderer.cpp" />
     <ClCompile Include="DynamicObject.cpp" />
     <ClCompile Include="Level.cpp" />
+    <ClCompile Include="Vector2.cpp" />
     <ClCompile Include="StaticObject.cpp" />
   </ItemGroup>
   <ItemGroup>

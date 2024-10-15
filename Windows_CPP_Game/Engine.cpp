@@ -1,5 +1,25 @@
 #include "Engine.h"
 
+SGameEngine::SGameEngine() : 
+    //hWnd(nullptr),
+    firstColorPen(nullptr),
+    secondColorPen(nullptr),
+    whiteColorPen(nullptr),
+    letterPen(nullptr),
+    backgroundPen(nullptr),
+    levelBorderFirstPen(nullptr),
+    levelBorderSecondPen(nullptr),
+    levelBorderThirdPen(nullptr),
+
+    backgroundBrush(nullptr),
+    firstColorBrush(nullptr),
+    secondColorBrush(nullptr),
+    whiteColorBrush(nullptr),
+    levelBorderFirstBrush(nullptr),
+    levelBorderSecondBrush(nullptr),
+    levelBorderThirdBrush(nullptr)
+{}
+
 void SGameEngine::OnGameInitRedraw(HWND hWnd)
 {
     EngineRenderer.hWnd = hWnd;
